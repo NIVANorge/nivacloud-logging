@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup
-from os import path
-this_directory = path.abspath(path.dirname(__file__))
-with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
 
 setup(
     name='nivacloud-logging',
@@ -11,10 +7,9 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.1.1',
+    version='0.1.2',
 
     description="Utils for setting up logging used in nivacloud application",
-    long_description=long_description,
     long_description_content_type='text/markdown',
 
     # The project's main homepage.
@@ -55,5 +50,5 @@ setup(
         ]
     },
     test_suite='nose2.collector.collector',
-    packages=[".", "nivacloud_logging"]
+    packages=["nivacloud_logging"]
 )
