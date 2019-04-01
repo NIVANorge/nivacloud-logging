@@ -1,16 +1,19 @@
 # Nivacloud-logging
 
 A set of shared utils for setting up logging in a consistent way in
-the *nivacloud* ecosystem.
+the [nivacloud](https://github.com/NIVANorge/nivacloud) ecosystem.
 
 ## Usage
 
 ```python
 import logging
-from nivacloud_logging.log_utils import setup_structured_logging
+from nivacloud_logging.log_utils import setup_structured_logging, LogContext
 
 setup_structured_logging()
 logging.info("something happened")
+
+with LogContext(my_id=123):
+    logging.info("something happened with some context attached")
 ```
 
 ### Running tests

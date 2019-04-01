@@ -47,6 +47,7 @@ setup(
     ],
     tests_require=[
         "pytest==4.4.0",
+        "pytest-asyncio==0.10.0",
     ],
     packages=["nivacloud_logging"]
 )
