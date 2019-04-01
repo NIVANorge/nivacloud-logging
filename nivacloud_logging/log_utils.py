@@ -1,8 +1,9 @@
 import logging
-import sys
 import os
+import sys
 import threading
 from logging import StreamHandler
+
 from pythonjsonlogger import jsonlogger
 
 

@@ -40,15 +40,13 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     install_requires=[
-        "python-json-logger",
-        "testfixtures"
-
+        "python-json-logger==0.1.11",
     ],
-    extras_require={
-        "test": [
-            "nose2"
-        ]
-    },
-    test_suite='nose2.collector.collector',
+    setup_requires=[
+        "pytest-runner==4.4",
+    ],
+    tests_require=[
+        "pytest==4.4.0",
+    ],
     packages=["nivacloud_logging"]
 )
