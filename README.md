@@ -22,6 +22,15 @@ with LogContext(my_id=123):
 $ python setup.py test
 ```
 
+Or just run `pytest` if you have all packages installed.
+
+#### Quirks
+
+With [pytest](https://docs.pytest.org/en/latest/) you would normally 
+use *caplog* to check log messages, but we're testing the logging
+itself here, so it makes more sense to use *capsys* to read the
+actual text output. 
+
 ## Intended audience
 
 This repository is primarily intended for internal use within

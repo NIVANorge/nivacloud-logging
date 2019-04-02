@@ -9,12 +9,16 @@ import pytest
 from nivacloud_logging.log_utils import setup_structured_logging, LogContext
 
 
+def _readout_json(capsys):
+    (out, _) = capsys.readouterr()
+    return json.loads(out)
+
+
 def test_should_log_jsons(capsys):
     setup_structured_logging()
     logging.info("something happened")
 
-    (out, _) = capsys.readouterr()
-    log_json = json.loads(out)
+    log_json = _readout_json(capsys)
 
     assert log_json["message"] == "something happened"
     assert log_json["filename"] == "test_structured_logging.py"
@@ -29,8 +33,7 @@ def test_should_log_jsons_error(capsys):
     setup_structured_logging()
     logging.error("error error!")
 
-    (out, _) = capsys.readouterr()
-    log_json = json.loads(out)
+    log_json = _readout_json(capsys)
 
     assert log_json["message"] == "error error!"
     assert log_json["filename"] == "test_structured_logging.py"
@@ -50,8 +53,7 @@ def test_should_log_exceptions_as_json(capsys):
     except Exception:
         logging.exception("some error message")
 
-    (out, _) = capsys.readouterr()
-    log_json = json.loads(out)
+    log_json = _readout_json(capsys)
 
     assert log_json["message"] == "some error message"
     assert "Traceback (most recent call last):" in log_json["exc_info"]
@@ -70,8 +72,7 @@ def test_should_not_log_below_log_level(capsys):
     logging.info("this should not be logged")
     logging.warning("warning should be logged")
 
-    (out, _) = capsys.readouterr()
-    log_json = json.loads(out)
+    log_json = _readout_json(capsys)
 
     assert log_json["message"] == "warning should be logged"
     assert log_json["filename"] == "test_structured_logging.py"
@@ -87,8 +88,7 @@ def test_should_include_context(capsys):
     with LogContext(trace_id=123):
         logging.info("Something mysterious happened!")
 
-    (out, _) = capsys.readouterr()
-    log_json = json.loads(out)
+    log_json = _readout_json(capsys)
 
     assert log_json["message"] == "Something mysterious happened!"
     assert log_json["trace_id"] == 123
@@ -105,8 +105,7 @@ def test_should_handle_nested_context(capsys):
         with LogContext(trace_id=42):
             logging.info("Something nested happened!")
 
-    (out, _) = capsys.readouterr()
-    log_json = json.loads(out)
+    log_json = _readout_json(capsys)
 
     assert log_json["message"] == "Something nested happened!"
     assert log_json["trace_id"] == 42
@@ -116,6 +115,40 @@ def test_should_handle_nested_context(capsys):
     assert log_json["timestamp"] is not None
     assert log_json["thread"] is not None
     assert log_json["pid"] is not None
+
+
+def test_should_handle_extra_parameters(capsys):
+    setup_structured_logging()
+
+    logging.info("Something extra happened!", extra={'foo': 'bar'})
+
+    log_json = _readout_json(capsys)
+
+    assert log_json['message'] == 'Something extra happened!'
+    assert log_json['foo'] == 'bar'
+
+
+def test_extra_parameters_should_override(capsys):
+    setup_structured_logging()
+
+    with LogContext(trace_id=123, foo='bar'):
+        logging.info("Something extra happened!", extra={'foo': 'quux'})
+
+    log_json = _readout_json(capsys)
+
+    assert log_json['message'] == 'Something extra happened!'
+    assert log_json['trace_id'] == 123
+    assert log_json['foo'] == 'quux'
+
+
+def test_context_should_not_overwrite_existing_records(capsys):
+    setup_structured_logging()
+    with LogContext(timestamp=123):
+        logging.info("something happened")
+    log_json = _readout_json(capsys)
+
+    assert log_json['message'] == 'something happened'
+    assert log_json['timestamp'] != 123
 
 
 @pytest.mark.asyncio
@@ -131,8 +164,7 @@ async def test_should_handle_async_context(capsys):
         async with LogContext(result=result):
             logging.info("Hei!")
 
-    (out, _) = capsys.readouterr()
-    log_json = json.loads(out)
+    log_json = _readout_json(capsys)
 
     assert log_json["message"] == "Hei!"
     assert log_json["result"] == 123
@@ -187,8 +219,7 @@ def test_should_work_with_nonroot_logger(capsys):
     with LogContext(trace_id=123):
         logger.info("I'm not the root logger.")
 
-    (out, _) = capsys.readouterr()
-    log_json = json.loads(out)
+    log_json = _readout_json(capsys)
 
     assert log_json['message'] == "I'm not the root logger."
     assert log_json['trace_id'] == 123
