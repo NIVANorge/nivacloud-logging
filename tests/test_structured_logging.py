@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from nivacloud_logging.log_utils import setup_structured_logging, LogContext
+from nivacloud_logging.log_utils import setup_logging, LogContext
 
 
 def _readout_json(capsys):
@@ -15,7 +15,7 @@ def _readout_json(capsys):
 
 
 def test_should_log_jsons(capsys):
-    setup_structured_logging()
+    setup_logging()
     logging.info("something happened")
 
     log_json = _readout_json(capsys)
@@ -30,7 +30,7 @@ def test_should_log_jsons(capsys):
 
 
 def test_should_log_jsons_error(capsys):
-    setup_structured_logging()
+    setup_logging()
     logging.error("error error!")
 
     log_json = _readout_json(capsys)
@@ -45,7 +45,7 @@ def test_should_log_jsons_error(capsys):
 
 
 def test_should_log_exceptions_as_json(capsys):
-    setup_structured_logging()
+    setup_logging()
 
     # noinspection PyBroadException
     try:
@@ -67,7 +67,7 @@ def test_should_log_exceptions_as_json(capsys):
 
 
 def test_should_not_log_below_log_level(capsys):
-    setup_structured_logging(min_level=logging.WARNING)
+    setup_logging(min_level=logging.WARNING)
 
     logging.info("this should not be logged")
     logging.warning("warning should be logged")
@@ -84,7 +84,7 @@ def test_should_not_log_below_log_level(capsys):
 
 
 def test_should_include_context(capsys):
-    setup_structured_logging()
+    setup_logging()
     with LogContext(trace_id=123):
         logging.info("Something mysterious happened!")
 
@@ -100,7 +100,7 @@ def test_should_include_context(capsys):
 
 
 def test_should_handle_nested_context(capsys):
-    setup_structured_logging()
+    setup_logging()
     with LogContext(trace_id=123, foo="bar"):
         with LogContext(trace_id=42):
             logging.info("Something nested happened!")
@@ -118,7 +118,7 @@ def test_should_handle_nested_context(capsys):
 
 
 def test_should_handle_extra_parameters(capsys):
-    setup_structured_logging()
+    setup_logging()
 
     logging.info("Something extra happened!", extra={'foo': 'bar'})
 
@@ -129,7 +129,7 @@ def test_should_handle_extra_parameters(capsys):
 
 
 def test_extra_parameters_should_override(capsys):
-    setup_structured_logging()
+    setup_logging()
 
     with LogContext(trace_id=123, foo='bar'):
         logging.info("Something extra happened!", extra={'foo': 'quux'})
@@ -142,7 +142,7 @@ def test_extra_parameters_should_override(capsys):
 
 
 def test_context_should_not_overwrite_existing_records(capsys):
-    setup_structured_logging()
+    setup_logging()
     with LogContext(timestamp=123):
         logging.info("something happened")
     log_json = _readout_json(capsys)
@@ -153,7 +153,7 @@ def test_context_should_not_overwrite_existing_records(capsys):
 
 @pytest.mark.asyncio
 async def test_should_handle_async_context(capsys):
-    setup_structured_logging()
+    setup_logging()
 
     async def busywork(n):
         await asyncio.sleep(0.01)
@@ -180,7 +180,7 @@ def test_should_handle_multiple_threads_with_contexts(capsys):
     # (hopefully, depending on timing)
     # a parent thread is also using a log context to make sure that
     # thread-local variables actually work the way I think.
-    setup_structured_logging()
+    setup_logging()
 
     def worker():
         with LogContext(tid="child"):
@@ -214,7 +214,7 @@ def test_should_handle_multiple_threads_with_contexts(capsys):
 
 
 def test_should_work_with_nonroot_logger(capsys):
-    setup_structured_logging()
+    setup_logging()
     logger = logging.getLogger("nonroot")
     with LogContext(trace_id=123):
         logger.info("I'm not the root logger.")
@@ -223,4 +223,16 @@ def test_should_work_with_nonroot_logger(capsys):
 
     assert log_json['message'] == "I'm not the root logger."
     assert log_json['trace_id'] == 123
+    assert log_json['timestamp'] is not None
+
+
+def test_should_read_environment_config(capsys, monkeypatch):
+    monkeypatch.setenv('NIVACLOUD_PLAINTEXT_LOGS', '0')
+    setup_logging()
+
+    logging.info("Environment blah blah.")
+
+    log_json = _readout_json(capsys)
+
+    assert log_json['message'] == "Environment blah blah."
     assert log_json['timestamp'] is not None

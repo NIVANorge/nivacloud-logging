@@ -7,7 +7,7 @@ import time
 
 import pytest
 
-from nivacloud_logging.log_utils import setup_plaintext_logging, LogContext
+from nivacloud_logging.log_utils import setup_logging, LogContext
 
 
 def _readout_log(capsys):
@@ -15,12 +15,12 @@ def _readout_log(capsys):
     return out
 
 
-def _has_timestamp(s):
+def _has_asctime_timestamp(s):
     return re.search(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}', s)
 
 
 def test_should_log_something(capsys):
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
     logging.info("something happened")
     log = _readout_log(capsys)
 
@@ -29,11 +29,11 @@ def test_should_log_something(capsys):
     assert "INFO" in log
     assert "pid=" in log
     assert "thread=" in log
-    assert _has_timestamp(log)
+    assert _has_asctime_timestamp(log)
 
 
 def test_should_log_context(capsys):
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
     with LogContext(trace_id=123):
         logging.info("something happened")
     log = _readout_log(capsys)
@@ -42,22 +42,22 @@ def test_should_log_context(capsys):
     assert "something happened" in log
     assert "INFO" in log
     assert " [context: trace_id=123]" in log
-    assert _has_timestamp(log)
+    assert _has_asctime_timestamp(log)
 
 
 def test_should_only_optionally_log_context(capsys):
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
     logging.info("something happened")
     log = _readout_log(capsys)
 
     assert "--- Logging error ---" not in log
     assert "something happened" in log
     assert " [context:" not in log
-    assert _has_timestamp(log)
+    assert _has_asctime_timestamp(log)
 
 
 def test_context_should_not_overwrite_existing_records(capsys):
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
     with LogContext(asctime=123):
         logging.info("something happened")
     log = _readout_log(capsys)
@@ -65,22 +65,22 @@ def test_context_should_not_overwrite_existing_records(capsys):
     assert "--- Logging error ---" not in log
     assert "something happened" in log
     assert "asctime=123" not in log
-    assert _has_timestamp(log)
+    assert _has_asctime_timestamp(log)
 
 
 def test_should_log_errors(capsys):
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
     logging.error("error error!")
     log = _readout_log(capsys)
 
     assert "--- Logging error ---" not in log
     assert "error error!" in log
     assert "ERROR" in log
-    assert _has_timestamp(log)
+    assert _has_asctime_timestamp(log)
 
 
 def test_should_log_exceptions(capsys):
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
 
     # noinspection PyBroadException
     try:
@@ -95,11 +95,11 @@ def test_should_log_exceptions(capsys):
     assert "Traceback (most recent call last):" in log
     assert 'raise Exception("something horribly went wrong")' in log
     assert "test_plaintext_logging.py" in log
-    assert _has_timestamp(log)
+    assert _has_asctime_timestamp(log)
 
 
 def test_should_not_log_below_log_level(capsys):
-    setup_plaintext_logging(stream=sys.stdout, min_level=logging.WARNING)
+    setup_logging(stream=sys.stdout, min_level=logging.WARNING, plaintext=True)
 
     logging.info("this should not be logged")
     logging.warning("warning should be logged")
@@ -115,11 +115,11 @@ def test_should_not_log_below_log_level(capsys):
     assert "INFO" not in log
     assert "this should not be logged" not in log
 
-    assert _has_timestamp(log)
+    assert _has_asctime_timestamp(log)
 
 
 def test_should_handle_nested_context(capsys):
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
     with LogContext(trace_id=123, foo="bar"):
         with LogContext(trace_id=42):
             logging.info("Something nested happened!")
@@ -131,12 +131,12 @@ def test_should_handle_nested_context(capsys):
     assert "trace_id=42" in log
     assert "foo='bar'" in log
     assert "INFO" in log
-    assert _has_timestamp(log)
+    assert _has_asctime_timestamp(log)
 
 
 @pytest.mark.asyncio
 async def test_should_handle_async_context(capsys):
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
 
     async def busywork(n):
         await asyncio.sleep(0.01)
@@ -153,7 +153,7 @@ async def test_should_handle_async_context(capsys):
     assert "Hei!" in log
     assert "result=123" in log
     assert "INFO" in log
-    assert _has_timestamp(log)
+    assert _has_asctime_timestamp(log)
 
 
 def test_should_handle_multiple_threads_with_contexts(capsys):
@@ -165,7 +165,7 @@ def test_should_handle_multiple_threads_with_contexts(capsys):
     # Also note that for some reason that isn't entirely clear to
     # me, this test doesn't run with output to std.stderr. (It
     # probably works fine in non-testing situations!)
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
 
     def worker():
         with LogContext(tid="child"):
@@ -199,12 +199,12 @@ def test_should_handle_multiple_threads_with_contexts(capsys):
     assert "--- Logging error ---" not in child
     assert "--- Logging error ---" not in parent
 
-    assert _has_timestamp(child)
-    assert _has_timestamp(parent)
+    assert _has_asctime_timestamp(child)
+    assert _has_asctime_timestamp(parent)
 
 
 def test_should_handle_extra_parameters(capsys):
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
 
     logging.info("Something extra happened!", extra={'xyzzy': 'qwerty'})
 
@@ -216,7 +216,7 @@ def test_should_handle_extra_parameters(capsys):
 
 
 def test_extra_parameters_should_override(capsys):
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
 
     with LogContext(trace_id=123, foo='bar'):
         logging.info("Something extra happened!", extra={'foo': 'quux'})
@@ -230,7 +230,7 @@ def test_extra_parameters_should_override(capsys):
 
 
 def test_should_work_with_nonroot_logger(capsys):
-    setup_plaintext_logging(stream=sys.stdout)
+    setup_logging(stream=sys.stdout, plaintext=True)
 
     logger = logging.getLogger("nonroot")
     with LogContext(trace_id=123):
@@ -241,4 +241,18 @@ def test_should_work_with_nonroot_logger(capsys):
     assert "--- Logging error ---" not in log
     assert "I'm not the root logger." in log
     assert "[context: trace_id=123]" in log
-    assert _has_timestamp(log)
+    assert _has_asctime_timestamp(log)
+
+
+def test_should_read_environment_config(capsys, monkeypatch):
+    monkeypatch.setenv('NIVACLOUD_PLAINTEXT_LOGS', '1')
+    setup_logging(stream=sys.stdout)
+
+    with LogContext(plaintexty="yes"):
+        logging.info("Environment blah blah.")
+
+    log = _readout_log(capsys)
+
+    assert "Environment blah blah." in log
+    assert "[context: plaintexty='yes']" in log
+    assert _has_asctime_timestamp(log)

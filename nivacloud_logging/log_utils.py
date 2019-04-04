@@ -1,5 +1,6 @@
 import functools
 import logging
+import os
 import sys
 import threading
 from logging import StreamHandler, Formatter
@@ -7,7 +8,7 @@ from logging import StreamHandler, Formatter
 from nivacloud_logging.json_formatter import StackdriverJsonFormatter
 
 
-class LogContext(object):
+class LogContext:
     """
     Establish a (synchronous or asynchronous) logging context with the given
     context_values. This context manager is reentrant, so you can have nested context.
@@ -75,7 +76,7 @@ def log_context(**ctxargs):
     return metawrap
 
 
-def global_exception_handler(exc_type, value, traceback):
+def _global_exception_handler(exc_type, value, traceback):
     """
     Intended used as a monkeypatch of sys.excepthook in order to log exceptions.
 
@@ -84,7 +85,7 @@ def global_exception_handler(exc_type, value, traceback):
     logging.exception(f"Uncaught exception {exc_type.__name__}: {value}", exc_info=(exc_type, value, traceback))
 
 
-class StructuredLogContextHandler(StreamHandler):
+class _StructuredLogContextHandler(StreamHandler):
     def handle(self, record):
         for (k, v) in LogContext.getcontext().items():
             if not hasattr(record, k):
@@ -93,21 +94,20 @@ class StructuredLogContextHandler(StreamHandler):
         return super().handle(record)
 
 
-# From Python docs via jsonlogger.py:
-# http://docs.python.org/library/logging.html#logrecord-attributes
-RESERVED_ATTRS = (
-    'args', 'asctime', 'created', 'exc_info', 'exc_text', 'filename',
-    'funcName', 'levelname', 'levelno', 'lineno', 'module',
-    'msecs', 'message', 'msg', 'name', 'pathname', 'process',
-    'processName', 'relativeCreated', 'stack_info', 'thread', 'threadName')
+class _PlaintextLogContextHandler(StreamHandler):
+    # From Python docs via jsonlogger.py:
+    # http://docs.python.org/library/logging.html#logrecord-attributes
+    RESERVED_ATTRS = (
+        'args', 'asctime', 'created', 'exc_info', 'exc_text', 'filename',
+        'funcName', 'levelname', 'levelno', 'lineno', 'module',
+        'msecs', 'message', 'msg', 'name', 'pathname', 'process',
+        'processName', 'relativeCreated', 'stack_info', 'thread', 'threadName')
 
-
-class PlaintextLogContextHandler(StreamHandler):
     def handle(self, record):
         ctx = {k: v for (k, v) in LogContext.getcontext().items() if not hasattr(record, k)}
 
         for key, value in record.__dict__.items():
-            if key not in RESERVED_ATTRS and not key.startswith("_") and key != 'context':
+            if key not in self.RESERVED_ATTRS and not key.startswith("_") and key != 'context':
                 ctx[key] = value
 
         formatted_ctx = [f"{k}={repr(v)}" for (k, v) in ctx.items()]
@@ -115,8 +115,49 @@ class PlaintextLogContextHandler(StreamHandler):
         return super().handle(record)
 
 
-def setup_structured_logging(min_level=logging.INFO, stream=None):
+def _setup_structured_logging(min_level, stream):
     formatter = StackdriverJsonFormatter(timestamp=True)
+
+    stream_handler = _StructuredLogContextHandler(stream)
+    stream_handler.setLevel(min_level)
+    stream_handler.setFormatter(formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.addHandler(stream_handler)
+    root_logger.setLevel(min_level)
+
+    sys.excepthook = _global_exception_handler
+
+
+def _setup_plaintext_logging(min_level, stream):
+    formatter = Formatter(fmt="%(asctime)s %(levelname)-7s "
+                              "%(filename)s:%(lineno)s:%(funcName)s, "
+                              "pid=%(process)d, thread=%(thread)d: %(message)s%(context)s")
+
+    stream_handler = _PlaintextLogContextHandler(stream)
+    stream_handler.setLevel(min_level)
+    stream_handler.setFormatter(formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.addHandler(stream_handler)
+    root_logger.setLevel(min_level)
+
+
+def setup_logging(min_level=logging.INFO, plaintext=None, stream=None):
+    """
+    Set up logging with sensible defaults. Enables output of structured
+    log contexts using the LogContext context manager.
+
+    :param min_level: Minimal log level to output at.
+    :param plaintext: If True, output human-readable logs, otherwise output
+        JSON suitable for Stackdriver. If None, use plaintext logging if
+        the NIVACLOUD_PLAINTEXT_LOGS environment variable is set.
+    :param stream: If None, default to sys.stdout for structured logs
+        or sys.stderr for plaintext output.
+    """
+
+    if plaintext is None:
+        plaintext = os.getenv('NIVACLOUD_PLAINTEXT_LOGS', '').lower() not in ('', '0', 'false', 'f')
 
     # This is a work-around to be able to run tests with pytest's output
     # capture when threading. (It doesn't work when you set it as a
@@ -125,33 +166,9 @@ def setup_structured_logging(min_level=logging.INFO, stream=None):
     # be bound to within the function. Also using sys.stderr when testing
     # doesn't really work due to how captured output is handled by pytest.)
     if stream is None:
-        stream = sys.stdout
+        stream = sys.stderr if plaintext else sys.stdout
 
-    # min_level to info goes to stdout
-    stream_handler = StructuredLogContextHandler(stream)
-    stream_handler.setLevel(min_level)
-    stream_handler.setFormatter(formatter)
-
-    root_logger = logging.getLogger()
-    root_logger.addHandler(stream_handler)
-    root_logger.setLevel(min_level)
-
-    sys.excepthook = global_exception_handler
-
-
-def setup_plaintext_logging(min_level=logging.INFO, stream=None):
-    formatter = Formatter(fmt="%(asctime)s %(levelname)-7s "
-                              "%(filename)s:%(lineno)s:%(funcName)s, "
-                              "pid=%(process)d, thread=%(thread)d: %(message)s%(context)s")
-
-    # Work-around, see setup_structured_logging:
-    if stream is None:
-        stream = sys.stderr
-
-    stream_handler = PlaintextLogContextHandler(stream)
-    stream_handler.setLevel(min_level)
-    stream_handler.setFormatter(formatter)
-
-    root_logger = logging.getLogger()
-    root_logger.addHandler(stream_handler)
-    root_logger.setLevel(min_level)
+    if plaintext:
+        _setup_plaintext_logging(min_level, stream)
+    else:
+        _setup_structured_logging(min_level, stream)
