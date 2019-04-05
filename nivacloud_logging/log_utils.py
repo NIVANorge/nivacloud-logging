@@ -1,31 +1,82 @@
+import functools
 import logging
 import os
 import sys
 import threading
-from logging import StreamHandler
+from logging import StreamHandler, Formatter
 
-from pythonjsonlogger import jsonlogger
+from nivacloud_logging.json_formatter import StackdriverJsonFormatter
 
 
-class StackdriverJsonFormatter(jsonlogger.JsonFormatter, object):
+class LogContext:
     """
-    Creates a json formatter which outputs logs in a "stackdriver friendly format".
-    Following the appraoch described at
-    https://medium.com/retailmenot-engineering/formatting-python-logs-for-stackdriver-5a5ddd80761c
+    Establish a (synchronous or asynchronous) logging context with the given
+    context_values. This context manager is reentrant, so you can have nested context.
+
+    Sample usage:
+
+        with LogContext(trace_id=123):
+            logging.error("Something really bad happened!")
     """
 
-    def __init__(self, fmt="%(levelname) %(message) %(filename) %(lineno)", style='%', *args, **kwargs):
-        jsonlogger.JsonFormatter.__init__(self, fmt=fmt, *args, **kwargs)
+    __context = threading.local()
 
-    def process_log_record(self, log_record):
-        log_record['severity'] = log_record['levelname']
-        log_record["thread"] = threading.get_ident()
-        log_record["pid"] = os.getpid()
-        del log_record['levelname']
-        return super(StackdriverJsonFormatter, self).process_log_record(log_record)
+    def __init__(self, **context_values):
+        self.context_values = context_values
+
+    async def __aenter__(self):
+        self._enter_context()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        self._exit_context()
+
+    def __enter__(self):
+        self._enter_context()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._exit_context()
+
+    def _enter_context(self):
+        for (ctx_key, ctx_value) in self.context_values.items():
+            stack = getattr(self.__context, ctx_key, [])
+            setattr(self.__context, ctx_key, stack)
+            stack.append(ctx_value)
+
+    def _exit_context(self):
+        for ctx_key in self.context_values.keys():
+            stack = getattr(self.__context, ctx_key, None)
+            if stack:
+                stack.pop()
+
+    @classmethod
+    def getcontext(cls):
+        return {k: v[-1] for (k, v) in cls.__context.__dict__.items() if v}
 
 
-def global_exception_handler(exc_type, value, traceback):
+def log_context(**ctxargs):
+    """
+    A decorator that wraps a function using the LogContext class.
+
+    Sample usage:
+        @log_context(foo="bar")
+        def xyzzy(x):
+            logging.info("I'll also log something about foo.")
+    """
+
+    def metawrap(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            with LogContext(**ctxargs):
+                return func(*args, **kwargs)
+
+        return wrapper
+
+    return metawrap
+
+
+def _global_exception_handler(exc_type, value, traceback):
     """
     Intended used as a monkeypatch of sys.excepthook in order to log exceptions.
 
@@ -34,16 +85,90 @@ def global_exception_handler(exc_type, value, traceback):
     logging.exception(f"Uncaught exception {exc_type.__name__}: {value}", exc_info=(exc_type, value, traceback))
 
 
-def setup_structured_logging(min_level=logging.INFO):
+class _StructuredLogContextHandler(StreamHandler):
+    def handle(self, record):
+        for (k, v) in LogContext.getcontext().items():
+            if not hasattr(record, k):
+                setattr(record, k, v)
+
+        return super().handle(record)
+
+
+class _PlaintextLogContextHandler(StreamHandler):
+    # From Python docs via jsonlogger.py:
+    # http://docs.python.org/library/logging.html#logrecord-attributes
+    RESERVED_ATTRS = (
+        'args', 'asctime', 'created', 'exc_info', 'exc_text', 'filename',
+        'funcName', 'levelname', 'levelno', 'lineno', 'module',
+        'msecs', 'message', 'msg', 'name', 'pathname', 'process',
+        'processName', 'relativeCreated', 'stack_info', 'thread', 'threadName')
+
+    def handle(self, record):
+        ctx = {k: v for (k, v) in LogContext.getcontext().items() if not hasattr(record, k)}
+
+        for key, value in record.__dict__.items():
+            if key not in self.RESERVED_ATTRS and not key.startswith("_") and key != 'context':
+                ctx[key] = value
+
+        formatted_ctx = [f"{k}={repr(v)}" for (k, v) in ctx.items()]
+        record.context = (" [context: " + ", ".join(formatted_ctx) + "]") if ctx else ""
+        return super().handle(record)
+
+
+def _setup_structured_logging(min_level, stream):
     formatter = StackdriverJsonFormatter(timestamp=True)
 
-    # min_level to info goes to stdout
-    stdout_handler = StreamHandler(sys.stdout)
-    stdout_handler.setLevel(min_level)
-    stdout_handler.setFormatter(formatter)
+    stream_handler = _StructuredLogContextHandler(stream)
+    stream_handler.setLevel(min_level)
+    stream_handler.setFormatter(formatter)
 
     root_logger = logging.getLogger()
-    root_logger.addHandler(stdout_handler)
+    root_logger.addHandler(stream_handler)
     root_logger.setLevel(min_level)
 
-    sys.excepthook = global_exception_handler
+    sys.excepthook = _global_exception_handler
+
+
+def _setup_plaintext_logging(min_level, stream):
+    formatter = Formatter(fmt="%(asctime)s %(levelname)-7s "
+                              "%(filename)s:%(lineno)s:%(funcName)s, "
+                              "pid=%(process)d, thread=%(thread)d: %(message)s%(context)s")
+
+    stream_handler = _PlaintextLogContextHandler(stream)
+    stream_handler.setLevel(min_level)
+    stream_handler.setFormatter(formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.addHandler(stream_handler)
+    root_logger.setLevel(min_level)
+
+
+def setup_logging(min_level=logging.INFO, plaintext=None, stream=None):
+    """
+    Set up logging with sensible defaults. Enables output of structured
+    log contexts using the LogContext context manager.
+
+    :param min_level: Minimal log level to output at.
+    :param plaintext: If True, output human-readable logs, otherwise output
+        JSON suitable for Stackdriver. If None, use plaintext logging if
+        the NIVACLOUD_PLAINTEXT_LOGS environment variable is set.
+    :param stream: If None, default to sys.stdout for structured logs
+        or sys.stderr for plaintext output.
+    """
+
+    if plaintext is None:
+        plaintext = os.getenv('NIVACLOUD_PLAINTEXT_LOGS', '').lower() not in ('', '0', 'false', 'f')
+
+    # This is a work-around to be able to run tests with pytest's output
+    # capture when threading. (It doesn't work when you set it as a
+    # default value on the parameter directly, because then it will refer
+    # to the actual sys.stdout instead of the captured stdout that it will
+    # be bound to within the function. Also using sys.stderr when testing
+    # doesn't really work due to how captured output is handled by pytest.)
+    if stream is None:
+        stream = sys.stderr if plaintext else sys.stdout
+
+    if plaintext:
+        _setup_plaintext_logging(min_level, stream)
+    else:
+        _setup_structured_logging(min_level, stream)
