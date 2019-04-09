@@ -236,3 +236,23 @@ def test_should_read_environment_config(capsys, monkeypatch):
 
     assert log_json['message'] == "Environment blah blah."
     assert log_json['timestamp'] is not None
+
+
+def test_should_override_propagation(capsys):
+    logger = logging.getLogger('foo')
+    logger.propagate = False
+    setup_logging(override=True)
+    logger.info('Hei')
+
+    log_json = _readout_json(capsys)
+    assert log_json['message'] == 'Hei'
+
+
+def test_should_not_log_on_non_override(capsys):
+    logger = logging.getLogger('foo')
+    logger.propagate = False
+    setup_logging(override=False)
+    logger.info('Hei')
+
+    with pytest.raises(json.JSONDecodeError):
+        _readout_json(capsys)

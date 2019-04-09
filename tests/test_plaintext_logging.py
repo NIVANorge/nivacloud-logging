@@ -256,3 +256,24 @@ def test_should_read_environment_config(capsys, monkeypatch):
     assert "Environment blah blah." in log
     assert "[context: plaintexty='yes']" in log
     assert _has_asctime_timestamp(log)
+
+
+def test_should_override_propagation(capsys):
+    logger = logging.getLogger('foo')
+    logger.propagate = False
+    setup_logging(override=True, plaintext=True, stream=sys.stdout)
+    logger.info('Hei')
+
+    log = _readout_log(capsys)
+    assert 'Hei' in log
+    assert _has_asctime_timestamp(log)
+
+
+def test_should_not_log_on_non_override(capsys):
+    logger = logging.getLogger('foo')
+    logger.propagate = False
+    setup_logging(override=False, plaintext=True, stream=sys.stdout)
+    logger.info('Hei')
+
+    log = _readout_log(capsys)
+    assert 'Hei' not in log

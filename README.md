@@ -9,6 +9,12 @@ Normally, you would just call `setup_logging()` and start logging and
 set the `NIVACLOUD_PLAINTEXT_LOGS` if you want plaintext (human-readable)
 logs instead of JSON. Default is JSON.
 
+By default it will override loggers to make sure that we get all the
+logs through our handler. (So that everything is formatted as JSON and
+ends up on stdout for Docker logs.) This feels slightly hacky, but I
+think it's okay for our usecase. If you need to disable this, set
+`NIVACLOUD_OVERRIDE_LOGGERS` to `0`.
+
 ```python
 import logging
 from nivacloud_logging.log_utils import setup_logging, LogContext, log_context
@@ -24,6 +30,12 @@ def myfun(x):
     logging.info("I'm adding 1 to X and outputting 'something'!")
     return x + 1
 ```
+
+### With Gunicorn
+
+To work with Gunicorn, you need to start `gunicorn` with the `--preload`
+option so that `setup_logging` has a chance to run first. Also
+`--access-logfile -` is needed for access logs.
 
 ### Running tests
 

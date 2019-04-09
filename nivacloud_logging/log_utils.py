@@ -143,7 +143,17 @@ def _setup_plaintext_logging(min_level, stream):
     root_logger.setLevel(min_level)
 
 
-def setup_logging(min_level=logging.INFO, plaintext=None, stream=None):
+def _override_log_handlers():
+    loggers = logging.root.manager.loggerDict.values()
+    for logger in loggers:
+        logger.propagate = True
+        if hasattr(logger, 'handlers'):
+            for handler in logger.handlers:
+                logger.removeHandler(handler)
+        logger.propagate = True
+
+
+def setup_logging(min_level=logging.INFO, plaintext=None, stream=None, override=None):
     """
     Set up logging with sensible defaults. Enables output of structured
     log contexts using the LogContext context manager.
@@ -154,10 +164,18 @@ def setup_logging(min_level=logging.INFO, plaintext=None, stream=None):
         the NIVACLOUD_PLAINTEXT_LOGS environment variable is set.
     :param stream: If None, default to sys.stdout for structured logs
         or sys.stderr for plaintext output.
+    :param override: If true (default), remove all handlers except the ones
+        on the root logger and enable propagation for every logger. To make
+        sure that we receive all the log entries in the format we want with '
+        contexts. Can be enabled/disabled with NIVACLOUD_OVERRIDE_LOGGERS
+        environment variable.
     """
 
     if plaintext is None:
         plaintext = os.getenv('NIVACLOUD_PLAINTEXT_LOGS', '').lower() not in ('', '0', 'false', 'f')
+
+    if override is None:
+        override = os.getenv('NIVACLOUD_OVERRIDE_LOGGERS', '1').lower() in ('1', 'true', 't')
 
     # This is a work-around to be able to run tests with pytest's output
     # capture when threading. (It doesn't work when you set it as a
@@ -172,3 +190,6 @@ def setup_logging(min_level=logging.INFO, plaintext=None, stream=None):
         _setup_plaintext_logging(min_level, stream)
     else:
         _setup_structured_logging(min_level, stream)
+
+    if override:
+        _override_log_handlers()
