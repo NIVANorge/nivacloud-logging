@@ -23,6 +23,7 @@ class LogContext:
 
     def __init__(self, **context_values):
         self.context_values = context_values
+        self.previous_values = {}
 
     async def __aenter__(self):
         self._enter_context()
@@ -39,20 +40,21 @@ class LogContext:
         self._exit_context()
 
     def _enter_context(self):
-        for (ctx_key, ctx_value) in self.context_values.items():
-            stack = getattr(self.__context, ctx_key, [])
-            setattr(self.__context, ctx_key, stack)
-            stack.append(ctx_value)
+        for ctx_key, ctx_value in self.context_values.items():
+            self.previous_values[ctx_key] = getattr(self.__context, ctx_key, None)
+            setattr(self.__context, ctx_key, ctx_value)
 
     def _exit_context(self):
         for ctx_key in self.context_values.keys():
-            stack = getattr(self.__context, ctx_key, None)
-            if stack:
-                stack.pop()
+            previous = self.previous_values[ctx_key]
+            if previous is None:
+                delattr(self.__context, ctx_key)
+            else:
+                setattr(self.__context, ctx_key, previous)
 
     @classmethod
     def getcontext(cls):
-        return {k: v[-1] for (k, v) in cls.__context.__dict__.items() if v}
+        return cls.__context.__dict__.copy()
 
 
 def log_context(**ctxargs):
