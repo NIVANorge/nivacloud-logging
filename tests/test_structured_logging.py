@@ -256,3 +256,15 @@ def test_should_not_log_on_non_override(capsys):
 
     with pytest.raises(json.JSONDecodeError):
         _readout_json(capsys)
+
+
+def test_should_handle_multiple_setup_calls(capsys):
+    setup_logging()
+    setup_logging()
+
+    logging.info('Hei')
+
+    # (Would throw exception if output was doubled.)
+    log_json = _readout_json(capsys)
+
+    assert log_json['message'] == 'Hei'

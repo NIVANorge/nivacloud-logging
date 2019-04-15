@@ -58,13 +58,13 @@ def test_should_only_optionally_log_context(capsys):
 
 def test_context_should_not_overwrite_existing_records(capsys):
     setup_logging(stream=sys.stdout, plaintext=True)
-    with LogContext(asctime=123):
+    with LogContext(created=123):
         logging.info("something happened")
     log = _readout_log(capsys)
 
     assert "--- Logging error ---" not in log
     assert "something happened" in log
-    assert "asctime=123" not in log
+    assert "created=123" not in log
     assert _has_asctime_timestamp(log)
 
 
@@ -277,3 +277,14 @@ def test_should_not_log_on_non_override(capsys):
 
     log = _readout_log(capsys)
     assert 'Hei' not in log
+
+
+def test_should_handle_multiple_setup_calls(capsys):
+    setup_logging(plaintext=True, stream=sys.stdout)
+    setup_logging(plaintext=True, stream=sys.stdout)
+
+    logging.info('Once only!')
+
+    log: str = _readout_log(capsys)
+
+    assert log.count('Once only!') == 1

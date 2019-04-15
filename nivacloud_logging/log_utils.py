@@ -87,7 +87,11 @@ def _global_exception_handler(exc_type, value, traceback):
     logging.exception(f"Uncaught exception {exc_type.__name__}: {value}", exc_info=(exc_type, value, traceback))
 
 
-class _StructuredLogContextHandler(StreamHandler):
+class _LogContextHandler(StreamHandler):
+    pass
+
+
+class _StructuredLogContextHandler(_LogContextHandler):
     def handle(self, record):
         for (k, v) in LogContext.getcontext().items():
             if not hasattr(record, k):
@@ -96,14 +100,14 @@ class _StructuredLogContextHandler(StreamHandler):
         return super().handle(record)
 
 
-class _PlaintextLogContextHandler(StreamHandler):
+class _PlaintextLogContextHandler(_LogContextHandler):
     # From Python docs via jsonlogger.py:
     # http://docs.python.org/library/logging.html#logrecord-attributes
-    RESERVED_ATTRS = (
+    RESERVED_ATTRS = {
         'args', 'asctime', 'created', 'exc_info', 'exc_text', 'filename',
         'funcName', 'levelname', 'levelno', 'lineno', 'module',
         'msecs', 'message', 'msg', 'name', 'pathname', 'process',
-        'processName', 'relativeCreated', 'stack_info', 'thread', 'threadName')
+        'processName', 'relativeCreated', 'stack_info', 'thread', 'threadName'}
 
     def handle(self, record):
         ctx = {k: v for (k, v) in LogContext.getcontext().items() if not hasattr(record, k)}
@@ -117,6 +121,16 @@ class _PlaintextLogContextHandler(StreamHandler):
         return super().handle(record)
 
 
+def _remove_existing_stream_handlers():
+    """
+    Remove existing root logger handlers so that we can safely re-run log setup.
+    """
+    root_logger = logging.root
+    for handler in root_logger.handlers:
+        if isinstance(handler, _LogContextHandler):
+            root_logger.removeHandler(handler)
+
+
 def _setup_structured_logging(min_level, stream):
     formatter = StackdriverJsonFormatter(timestamp=True)
 
@@ -125,6 +139,7 @@ def _setup_structured_logging(min_level, stream):
     stream_handler.setFormatter(formatter)
 
     root_logger = logging.getLogger()
+    _remove_existing_stream_handlers()
     root_logger.addHandler(stream_handler)
     root_logger.setLevel(min_level)
 
@@ -141,6 +156,7 @@ def _setup_plaintext_logging(min_level, stream):
     stream_handler.setFormatter(formatter)
 
     root_logger = logging.getLogger()
+    _remove_existing_stream_handlers()
     root_logger.addHandler(stream_handler)
     root_logger.setLevel(min_level)
 
