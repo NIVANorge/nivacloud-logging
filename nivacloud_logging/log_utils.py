@@ -117,7 +117,7 @@ class _PlaintextLogContextHandler(_LogContextHandler):
                 ctx[key] = value
 
         formatted_ctx = [f"{k}={repr(v)}" for (k, v) in ctx.items()]
-        record.context = (" [context: " + ", ".join(formatted_ctx) + "]") if ctx else ""
+        record.context = (" [" + ", ".join(formatted_ctx) + "]") if ctx else ""
         return super().handle(record)
 
 

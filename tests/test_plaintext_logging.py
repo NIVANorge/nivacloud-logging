@@ -41,7 +41,7 @@ def test_should_log_context(capsys):
     assert "--- Logging error ---" not in log
     assert "something happened" in log
     assert "INFO" in log
-    assert " [context: trace_id=123]" in log
+    assert " [trace_id=123]" in log
     assert _has_asctime_timestamp(log)
 
 
@@ -52,7 +52,7 @@ def test_should_only_optionally_log_context(capsys):
 
     assert "--- Logging error ---" not in log
     assert "something happened" in log
-    assert " [context:" not in log
+    assert " [" not in log
     assert _has_asctime_timestamp(log)
 
 
@@ -240,7 +240,7 @@ def test_should_work_with_nonroot_logger(capsys):
 
     assert "--- Logging error ---" not in log
     assert "I'm not the root logger." in log
-    assert "[context: trace_id=123]" in log
+    assert "[trace_id=123]" in log
     assert _has_asctime_timestamp(log)
 
 
@@ -254,7 +254,7 @@ def test_should_read_environment_config(capsys, monkeypatch):
     log = _readout_log(capsys)
 
     assert "Environment blah blah." in log
-    assert "[context: plaintexty='yes']" in log
+    assert "[plaintexty='yes']" in log
     assert _has_asctime_timestamp(log)
 
 
