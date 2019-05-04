@@ -1,4 +1,5 @@
 import functools
+import inspect
 import logging
 import os
 import sys
@@ -77,6 +78,44 @@ def log_context(**ctxargs):
         return wrapper
 
     return metawrap
+
+
+def auto_context(*context_args: str):
+    """
+    Automatically generate a context for the function it wraps consisting of the parameter names
+    associated with argument values. Optionally specify the parameters we want to include, otherwise
+    all are included.
+
+    Sample usage:
+        @auto_context("host", "user")
+        def login(host, user, password):
+            logging.info("Logging in...")    # Will add only host and user to LogContext
+
+        @auto_context()
+        def lookup(host, *servers):
+            logging.info("Doing lookup...")  # Will add both host and servers to LogContext
+
+    :param context_args: If provided list the names of parameters that should be included in the log context.
+    """
+
+    def meta_wrap(func):
+        signature = inspect.signature(func)
+        included_args = set(signature.parameters.keys()) - {"self"}
+        if context_args:
+            included_args &= set(context_args)
+
+        @functools.wraps(func)
+        def auto_ctx_wrapper(*args, **kwargs):
+            bound_args = signature.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+            log_params = {k: v for (k, v) in bound_args.arguments.items() if k in included_args}
+
+            with LogContext(**log_params):
+                return func(*args, **kwargs)
+
+        return auto_ctx_wrapper
+
+    return meta_wrap
 
 
 def _global_exception_handler(exc_type, value, traceback):

@@ -8,7 +8,7 @@ from datetime import datetime
 
 import pytest
 
-from nivacloud_logging.log_utils import setup_logging, LogContext
+from nivacloud_logging.log_utils import setup_logging, LogContext, auto_context
 
 
 def _readout_log(capsys):
@@ -288,3 +288,50 @@ def test_should_format_datetimes_properly(capsys):
 
     assert "--- Logging error ---" not in log
     assert 'from_time="2019-12-24T12:34:56"' in log
+
+
+def test_auto_context_should_only_add_requested_context(capsys):
+    # noinspection PyUnusedLocal
+    @auto_context("host", "user")
+    def login(host, user, password):
+        logging.info("Logging in")
+
+    setup_logging(plaintext=True, stream=sys.stdout)
+    login("ftp.example.com", "jane", "supersekrit")
+
+    log = _readout_log(capsys)
+
+    assert "host='ftp.example.com'" in log
+    assert "user='jane'" in log
+    assert "supersekrit" not in log
+
+
+def test_auto_context_should_log_all_parameters_by_default(capsys):
+    # noinspection PyUnusedLocal
+    @auto_context()
+    def lookup(host, *servers):
+        logging.info("Doing lookup...")
+
+    setup_logging(plaintext=True, stream=sys.stdout)
+    lookup("ftp.example.com", "1.1.1.1", "8.8.8.8")
+
+    log = _readout_log(capsys)
+
+    assert "host='ftp.example.com'" in log
+    assert "servers=('1.1.1.1', '8.8.8.8')" in log
+
+
+def test_auto_context_on_instance_methods(capsys):
+    class MyClass:
+        # noinspection PyUnusedLocal
+        @auto_context()
+        def my_method(self, a):
+            logging.info("Hi!")
+
+    setup_logging(plaintext=True, stream=sys.stdout)
+    c = MyClass()
+    c.my_method(42)
+
+    log = _readout_log(capsys)
+
+    assert "a=42" in log
