@@ -3,6 +3,7 @@ import json
 import logging
 import threading
 import time
+from datetime import datetime
 
 import pytest
 
@@ -268,3 +269,14 @@ def test_should_handle_multiple_setup_calls(capsys):
     log_json = _readout_json(capsys)
 
     assert log_json['message'] == 'Hei'
+
+
+def test_should_format_datetimes_properly(capsys):
+    setup_logging()
+
+    with LogContext(from_time=datetime(2019, 12, 24, 12, 34, 56, 0)):
+        logging.info("Something with a datetime")
+
+    log_json = _readout_json(capsys)
+
+    assert log_json['from_time'] == '2019-12-24T12:34:56'

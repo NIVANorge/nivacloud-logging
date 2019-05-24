@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import threading
+from datetime import datetime
 from logging import StreamHandler, Formatter
 
 from nivacloud_logging.json_formatter import StackdriverJsonFormatter
@@ -116,9 +117,16 @@ class _PlaintextLogContextHandler(_LogContextHandler):
             if key not in self.RESERVED_ATTRS and not key.startswith("_") and key != 'context':
                 ctx[key] = value
 
-        formatted_ctx = [f"{k}={repr(v)}" for (k, v) in ctx.items()]
+        formatted_ctx = [f"{k}={self.plain_repr(v)}" for (k, v) in ctx.items()]
         record.context = (" [" + ", ".join(formatted_ctx) + "]") if ctx else ""
         return super().handle(record)
+
+    @staticmethod
+    def plain_repr(o):
+        if isinstance(o, datetime):
+            return f'"{o.isoformat()}"'
+        else:
+            return repr(o)
 
 
 def _remove_existing_stream_handlers():

@@ -4,6 +4,7 @@ import re
 import sys
 import threading
 import time
+from datetime import datetime
 
 import pytest
 
@@ -288,3 +289,14 @@ def test_should_handle_multiple_setup_calls(capsys):
     log: str = _readout_log(capsys)
 
     assert log.count('Once only!') == 1
+
+
+def test_should_format_datetimes_properly(capsys):
+    setup_logging(plaintext=True, stream=sys.stdout)
+
+    with LogContext(from_time=datetime(2019, 12, 24, 12, 34, 56, 0)):
+        logging.info("Something with a datetime")
+
+    log = _readout_log(capsys)
+
+    assert 'from_time="2019-12-24T12:34:56"' in log
