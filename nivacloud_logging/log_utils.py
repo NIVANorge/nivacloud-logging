@@ -157,7 +157,7 @@ def _setup_structured_logging(min_level, stream):
 def _setup_plaintext_logging(min_level, stream):
     formatter = Formatter(fmt="%(asctime)s %(levelname)-7s "
                               "%(filename)s:%(lineno)s:%(funcName)s, "
-                              "pid=%(process)d, thread=%(thread)d: %(message)s%(context)s")
+                              "process=%(process)d, thread=%(thread)d: %(message)s%(context)s")
 
     stream_handler = _PlaintextLogContextHandler(stream)
     stream_handler.setLevel(min_level)

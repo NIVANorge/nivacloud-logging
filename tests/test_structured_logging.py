@@ -26,8 +26,6 @@ def test_should_log_jsons(capsys):
     assert log_json["lineno"] is not None
     assert log_json["timestamp"] is not None
     assert log_json["severity"] == "INFO"
-    assert log_json["thread"] is not None
-    assert log_json["pid"] is not None
 
 
 def test_should_log_jsons_error(capsys):
@@ -41,8 +39,6 @@ def test_should_log_jsons_error(capsys):
     assert log_json["lineno"] is not None
     assert log_json["timestamp"] is not None
     assert log_json["severity"] == "ERROR"
-    assert log_json["thread"] is not None
-    assert log_json["pid"] is not None
 
 
 def test_should_log_exceptions_as_json(capsys):
@@ -63,8 +59,6 @@ def test_should_log_exceptions_as_json(capsys):
     assert log_json["lineno"] is not None
     assert log_json["timestamp"] is not None
     assert log_json["severity"] == "ERROR"
-    assert log_json["thread"] is not None
-    assert log_json["pid"] is not None
 
 
 def test_should_not_log_below_log_level(capsys):
@@ -80,8 +74,6 @@ def test_should_not_log_below_log_level(capsys):
     assert log_json["severity"] == "WARNING"
     assert log_json["lineno"] is not None
     assert log_json["timestamp"] is not None
-    assert log_json["thread"] is not None
-    assert log_json["pid"] is not None
 
 
 def test_should_include_context(capsys):
@@ -96,8 +88,6 @@ def test_should_include_context(capsys):
     assert log_json["severity"] == "INFO"
     assert log_json["lineno"] is not None
     assert log_json["timestamp"] is not None
-    assert log_json["thread"] is not None
-    assert log_json["pid"] is not None
 
 
 def test_should_handle_nested_context(capsys):
@@ -114,8 +104,6 @@ def test_should_handle_nested_context(capsys):
     assert log_json["severity"] == "INFO"
     assert log_json["lineno"] is not None
     assert log_json["timestamp"] is not None
-    assert log_json["thread"] is not None
-    assert log_json["pid"] is not None
 
 
 def test_should_handle_extra_parameters(capsys):
@@ -172,8 +160,6 @@ async def test_should_handle_async_context(capsys):
     assert log_json["severity"] == "INFO"
     assert log_json["lineno"] is not None
     assert log_json["timestamp"] is not None
-    assert log_json["thread"] is not None
-    assert log_json["pid"] is not None
 
 
 def test_should_handle_multiple_threads_with_contexts(capsys):
@@ -206,8 +192,8 @@ def test_should_handle_multiple_threads_with_contexts(capsys):
     assert parent["message"] == "Hi from parent!"
     assert child["thread"] != parent["thread"]
     assert child["thread"] is not None
-    assert child["pid"] == parent["pid"]
-    assert child['pid'] is not None
+    assert child["process"] == parent["process"]
+    assert child['process'] is not None
     assert child["severity"] == "INFO"
     assert parent["severity"] == "INFO"
     assert child['timestamp'] is not None

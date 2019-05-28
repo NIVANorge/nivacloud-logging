@@ -16,10 +16,6 @@ def _readout_log(capsys):
     return out
 
 
-def _has_asctime_timestamp(s):
-    return re.search(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}', s)
-
-
 def test_should_log_something(capsys):
     setup_logging(stream=sys.stdout, plaintext=True)
     logging.info("something happened")
@@ -28,9 +24,9 @@ def test_should_log_something(capsys):
     assert "--- Logging error ---" not in log
     assert "something happened" in log
     assert "INFO" in log
-    assert "pid=" in log
+    assert "process=" in log
     assert "thread=" in log
-    assert _has_asctime_timestamp(log)
+    assert re.search(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}', log), "Missing or malformed timestamp"
 
 
 def test_should_log_context(capsys):
@@ -43,7 +39,6 @@ def test_should_log_context(capsys):
     assert "something happened" in log
     assert "INFO" in log
     assert " [trace_id=123]" in log
-    assert _has_asctime_timestamp(log)
 
 
 def test_should_only_optionally_log_context(capsys):
@@ -54,7 +49,6 @@ def test_should_only_optionally_log_context(capsys):
     assert "--- Logging error ---" not in log
     assert "something happened" in log
     assert " [" not in log
-    assert _has_asctime_timestamp(log)
 
 
 def test_context_should_not_overwrite_existing_records(capsys):
@@ -66,7 +60,6 @@ def test_context_should_not_overwrite_existing_records(capsys):
     assert "--- Logging error ---" not in log
     assert "something happened" in log
     assert "created=123" not in log
-    assert _has_asctime_timestamp(log)
 
 
 def test_should_log_errors(capsys):
@@ -77,7 +70,6 @@ def test_should_log_errors(capsys):
     assert "--- Logging error ---" not in log
     assert "error error!" in log
     assert "ERROR" in log
-    assert _has_asctime_timestamp(log)
 
 
 def test_should_log_exceptions(capsys):
@@ -96,7 +88,6 @@ def test_should_log_exceptions(capsys):
     assert "Traceback (most recent call last):" in log
     assert 'raise Exception("something horribly went wrong")' in log
     assert "test_plaintext_logging.py" in log
-    assert _has_asctime_timestamp(log)
 
 
 def test_should_not_log_below_log_level(capsys):
@@ -116,8 +107,6 @@ def test_should_not_log_below_log_level(capsys):
     assert "INFO" not in log
     assert "this should not be logged" not in log
 
-    assert _has_asctime_timestamp(log)
-
 
 def test_should_handle_nested_context(capsys):
     setup_logging(stream=sys.stdout, plaintext=True)
@@ -132,7 +121,6 @@ def test_should_handle_nested_context(capsys):
     assert "trace_id=42" in log
     assert "foo='bar'" in log
     assert "INFO" in log
-    assert _has_asctime_timestamp(log)
 
 
 @pytest.mark.asyncio
@@ -154,7 +142,6 @@ async def test_should_handle_async_context(capsys):
     assert "Hei!" in log
     assert "result=123" in log
     assert "INFO" in log
-    assert _has_asctime_timestamp(log)
 
 
 def test_should_handle_multiple_threads_with_contexts(capsys):
@@ -200,9 +187,6 @@ def test_should_handle_multiple_threads_with_contexts(capsys):
     assert "--- Logging error ---" not in child
     assert "--- Logging error ---" not in parent
 
-    assert _has_asctime_timestamp(child)
-    assert _has_asctime_timestamp(parent)
-
 
 def test_should_handle_extra_parameters(capsys):
     setup_logging(stream=sys.stdout, plaintext=True)
@@ -242,7 +226,6 @@ def test_should_work_with_nonroot_logger(capsys):
     assert "--- Logging error ---" not in log
     assert "I'm not the root logger." in log
     assert "[trace_id=123]" in log
-    assert _has_asctime_timestamp(log)
 
 
 def test_should_read_environment_config(capsys, monkeypatch):
@@ -254,9 +237,9 @@ def test_should_read_environment_config(capsys, monkeypatch):
 
     log = _readout_log(capsys)
 
+    assert "--- Logging error ---" not in log
     assert "Environment blah blah." in log
     assert "[plaintexty='yes']" in log
-    assert _has_asctime_timestamp(log)
 
 
 def test_should_override_propagation(capsys):
@@ -266,8 +249,9 @@ def test_should_override_propagation(capsys):
     logger.info('Hei')
 
     log = _readout_log(capsys)
+
+    assert "--- Logging error ---" not in log
     assert 'Hei' in log
-    assert _has_asctime_timestamp(log)
 
 
 def test_should_not_log_on_non_override(capsys):
@@ -277,6 +261,8 @@ def test_should_not_log_on_non_override(capsys):
     logger.info('Hei')
 
     log = _readout_log(capsys)
+
+    assert "--- Logging error ---" not in log
     assert 'Hei' not in log
 
 
@@ -288,6 +274,7 @@ def test_should_handle_multiple_setup_calls(capsys):
 
     log: str = _readout_log(capsys)
 
+    assert "--- Logging error ---" not in log
     assert log.count('Once only!') == 1
 
 
@@ -299,4 +286,5 @@ def test_should_format_datetimes_properly(capsys):
 
     log = _readout_log(capsys)
 
+    assert "--- Logging error ---" not in log
     assert 'from_time="2019-12-24T12:34:56"' in log

@@ -1,6 +1,3 @@
-import os
-import threading
-
 from pythonjsonlogger import jsonlogger
 
 
@@ -14,12 +11,12 @@ class StackdriverJsonFormatter(jsonlogger.JsonFormatter, object):
 
     """
 
-    def __init__(self, fmt="%(levelname) %(message) %(filename) %(lineno)", style='%', *args, **kwargs):
+    def __init__(self,
+                 fmt="%(levelname) %(message) %(funcName) %(module) %(filename) %(lineno) %(thread) %(process)",
+                 style='%', *args, **kwargs):
         jsonlogger.JsonFormatter.__init__(self, fmt=fmt, *args, **kwargs)
 
     def process_log_record(self, log_record):
         log_record['severity'] = log_record['levelname']
-        log_record["thread"] = threading.get_ident()
-        log_record["pid"] = os.getpid()
         del log_record['levelname']
         return super(StackdriverJsonFormatter, self).process_log_record(log_record)
