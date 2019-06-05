@@ -184,6 +184,9 @@ def setup_logging(min_level=logging.INFO, plaintext=None, stream=None, override=
     Set up logging with sensible defaults. Enables output of structured
     log contexts using the LogContext context manager.
 
+    (Note that the JSON-formatted handler also sets up a global exception handler
+    by overriding sys.excepthook.)
+
     :param min_level: Minimal log level to output at.
     :param plaintext: If True, output human-readable logs, otherwise output
         JSON suitable for Stackdriver. If None, use plaintext logging if
