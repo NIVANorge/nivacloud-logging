@@ -7,7 +7,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.4.6rc1',
+    version='0.4.6',
 
     description="Utils for setting up logging used in nivacloud application",
     long_description_content_type='text/markdown',
@@ -40,14 +40,14 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     install_requires=[
-        "python-json-logger==0.1.11",
+        "python-json-logger>=0.1.11,<0.2",
     ],
     setup_requires=[
-        "pytest-runner==4.4",
+        "pytest-runner",
     ],
     tests_require=[
-        "pytest==4.4.0",
-        "pytest-asyncio==0.10.0",
+        "pytest>=4.4.0",
+        "pytest-asyncio>=0.10.0",
     ],
     packages=["nivacloud_logging"]
 )
