@@ -4,7 +4,9 @@ import logging
 import threading
 import time
 from datetime import datetime
+from uuid import UUID
 
+import math
 import pytest
 
 from nivacloud_logging.log_utils import setup_logging, LogContext, auto_context
@@ -257,17 +259,6 @@ def test_should_handle_multiple_setup_calls(capsys):
     assert log_json['message'] == 'Hei'
 
 
-def test_should_format_datetimes_properly(capsys):
-    setup_logging()
-
-    with LogContext(from_time=datetime(2019, 12, 24, 12, 34, 56, 0)):
-        logging.info("Something with a datetime")
-
-    log_json = _readout_json(capsys)
-
-    assert log_json['from_time'] == '2019-12-24T12:34:56'
-
-
 def test_auto_context_should_only_add_requested_context(capsys):
     # noinspection PyUnusedLocal
     @auto_context("host", "user")
@@ -313,3 +304,30 @@ def test_auto_context_on_instance_methods(capsys):
     log_json = _readout_json(capsys)
 
     assert log_json['a'] == 42
+
+
+def test_should_handle_complex_context_data(capsys):
+    setup_logging()
+
+    class Sample:
+        pass
+
+    thing = {
+        'my_id': UUID('7118ad7e-6e26-483a-a120-7ec176331354'),
+        'time': datetime(2019, 12, 24, 12, 34, 56, 0),
+        'tupled': ("foo", {'complex': complex(12, 45)}, 1, 1.2, -4, 1.4e-10),
+        'class': Sample,
+        'instance': Sample(),
+        'nan': math.nan,
+    }
+
+    with LogContext(thing=thing):
+        logging.info("Hi, I have bunch of stuff.")
+
+    log_json = _readout_json(capsys)
+    thing = log_json['thing']
+
+    assert thing['my_id'] == '7118ad7e-6e26-483a-a120-7ec176331354'
+    assert thing['time'] == '2019-12-24T12:34:56'
+    assert ["foo", {"complex": {"real": 12.0, "imag": 45.0}}, 1, 1.2, -4, 1.4e-10] == thing["tupled"]
+    assert math.isnan(thing['nan'])

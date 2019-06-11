@@ -5,7 +5,9 @@ import sys
 import threading
 import time
 from datetime import datetime
+from uuid import UUID
 
+import math
 import pytest
 
 from nivacloud_logging.log_utils import setup_logging, LogContext, auto_context
@@ -119,7 +121,7 @@ def test_should_handle_nested_context(capsys):
     assert "--- Logging error ---" not in log
     assert "Something nested happened!" in log
     assert "trace_id=42" in log
-    assert "foo='bar'" in log
+    assert 'foo="bar"' in log
     assert "INFO" in log
 
 
@@ -172,9 +174,9 @@ def test_should_handle_multiple_threads_with_contexts(capsys):
     (log, _) = capsys.readouterr()
     [child, parent] = log.split('\n')[0:2]
 
-    assert "tid='child'" in child
+    assert 'tid="child"' in child
     assert "Hi from child!" in child
-    assert "tid='parent'" in parent
+    assert 'tid="parent"' in parent
     assert "Hi from parent!" in parent
 
     child_tid = re.search(r'thread=(\d+)', child).group(1)
@@ -197,7 +199,7 @@ def test_should_handle_extra_parameters(capsys):
 
     assert "--- Logging error ---" not in log
     assert 'Something extra happened!' in log
-    assert "xyzzy='qwerty'" in log
+    assert 'xyzzy="qwerty"' in log
 
 
 def test_extra_parameters_should_override(capsys):
@@ -211,7 +213,7 @@ def test_extra_parameters_should_override(capsys):
     assert "--- Logging error ---" not in log
     assert 'Something extra happened!' in log
     assert 'trace_id=123' in log
-    assert "foo='quux'" in log
+    assert 'foo="quux"' in log
 
 
 def test_should_work_with_nonroot_logger(capsys):
@@ -239,7 +241,7 @@ def test_should_read_environment_config(capsys, monkeypatch):
 
     assert "--- Logging error ---" not in log
     assert "Environment blah blah." in log
-    assert "[plaintexty='yes']" in log
+    assert '[plaintexty="yes"]' in log
 
 
 def test_should_override_propagation(capsys):
@@ -278,18 +280,6 @@ def test_should_handle_multiple_setup_calls(capsys):
     assert log.count('Once only!') == 1
 
 
-def test_should_format_datetimes_properly(capsys):
-    setup_logging(plaintext=True, stream=sys.stdout)
-
-    with LogContext(from_time=datetime(2019, 12, 24, 12, 34, 56, 0)):
-        logging.info("Something with a datetime")
-
-    log = _readout_log(capsys)
-
-    assert "--- Logging error ---" not in log
-    assert 'from_time="2019-12-24T12:34:56"' in log
-
-
 def test_auto_context_should_only_add_requested_context(capsys):
     # noinspection PyUnusedLocal
     @auto_context("host", "user")
@@ -301,8 +291,9 @@ def test_auto_context_should_only_add_requested_context(capsys):
 
     log = _readout_log(capsys)
 
-    assert "host='ftp.example.com'" in log
-    assert "user='jane'" in log
+    assert "--- Logging error ---" not in log
+    assert 'host="ftp.example.com"' in log
+    assert 'user="jane"' in log
     assert "supersekrit" not in log
 
 
@@ -317,8 +308,9 @@ def test_auto_context_should_log_all_parameters_by_default(capsys):
 
     log = _readout_log(capsys)
 
-    assert "host='ftp.example.com'" in log
-    assert "servers=('1.1.1.1', '8.8.8.8')" in log
+    assert "--- Logging error ---" not in log
+    assert 'host="ftp.example.com"' in log
+    assert 'servers=["1.1.1.1", "8.8.8.8"]' in log
 
 
 def test_auto_context_on_instance_methods(capsys):
@@ -334,4 +326,32 @@ def test_auto_context_on_instance_methods(capsys):
 
     log = _readout_log(capsys)
 
+    assert "--- Logging error ---" not in log
     assert "a=42" in log
+
+
+def test_should_handle_complex_context_data(capsys):
+    setup_logging(plaintext=True, stream=sys.stdout)
+
+    class Sample:
+        pass
+
+    thing = {
+        'my_id': UUID('7118ad7e-6e26-483a-a120-7ec176331354'),
+        'time': datetime(2019, 12, 24, 12, 34, 56, 0),
+        'tupled': ("foo", {'complex': complex(12, 45)}, 1, 1.2, -4, 1.4e-10),
+        'class': Sample,
+        'instance': Sample(),
+        'nan': math.nan,
+    }
+
+    with LogContext(thing=thing):
+        logging.info("Hi, I have bunch of stuff.")
+
+    log = _readout_log(capsys)
+
+    assert "--- Logging error ---" not in log
+    assert '"my_id": "7118ad7e-6e26-483a-a120-7ec176331354"' in log
+    assert '"time": "2019-12-24T12:34:56"' in log
+    assert '"tupled": ["foo", {"complex": {"imag": 45.0, "real": 12.0}}' in log
+    assert '"nan": NaN' in log

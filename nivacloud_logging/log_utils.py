@@ -1,10 +1,11 @@
 import functools
 import inspect
+import json
 import logging
 import os
 import sys
 import threading
-from datetime import datetime
+from datetime import datetime, date, time
 from logging import StreamHandler, Formatter
 
 from nivacloud_logging.json_formatter import StackdriverJsonFormatter
@@ -127,6 +128,15 @@ def _global_exception_handler(exc_type, value, traceback):
     logging.exception(f"Uncaught exception {exc_type.__name__}: {value}", exc_info=(exc_type, value, traceback))
 
 
+def json_default(o):
+    if isinstance(o, (date, datetime, time)):
+        return o.isoformat()
+    elif isinstance(o, complex):
+        return {'real': o.real, 'imag': o.imag}
+    else:
+        return str(o)
+
+
 class _LogContextHandler(StreamHandler):
     pass
 
@@ -162,10 +172,7 @@ class _PlaintextLogContextHandler(_LogContextHandler):
 
     @staticmethod
     def plain_repr(o):
-        if isinstance(o, datetime):
-            return f'"{o.isoformat()}"'
-        else:
-            return repr(o)
+        return json.dumps(o, default=json_default, sort_keys=True)
 
 
 def _remove_existing_stream_handlers():
@@ -179,7 +186,7 @@ def _remove_existing_stream_handlers():
 
 
 def _setup_structured_logging(min_level, stream):
-    formatter = StackdriverJsonFormatter(timestamp=True)
+    formatter = StackdriverJsonFormatter(timestamp=True, json_default=json_default)
 
     stream_handler = _StructuredLogContextHandler(stream)
     stream_handler.setLevel(min_level)
