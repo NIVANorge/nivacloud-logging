@@ -31,6 +31,12 @@ def myfun(x):
     return x + 1
 ```
 
+### Runtime configuration
+
+If you want to tweak the log level of a running service, you can 
+send `SIGUSR1` to set `INFO` level debugging and `SIGUSR2` to set
+`DEBUG` level debugging.
+
 ### With Gunicorn
 
 To work with Gunicorn, you need to start `gunicorn` with the `--preload`
