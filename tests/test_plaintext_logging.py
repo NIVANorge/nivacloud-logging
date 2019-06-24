@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import os
 import re
+import signal
 import sys
 import threading
 import time
@@ -355,3 +357,50 @@ def test_should_handle_complex_context_data(capsys):
     assert '"time": "2019-12-24T12:34:56"' in log
     assert '"tupled": ["foo", {"complex": {"imag": 45.0, "real": 12.0}}' in log
     assert '"nan": NaN' in log
+
+
+def test_sigusr1_should_set_info_logging(capsys):
+    setup_logging(min_level=logging.ERROR, plaintext=True, stream=sys.stdout)
+    logging.info("Not logged")
+    os.kill(os.getpid(), signal.SIGUSR1)
+    logging.info("This is logged")
+
+    log = _readout_log(capsys)
+    assert "--- Logging error ---" not in log
+    assert log.count('\n') == 1, "Expecting single line of logging output"
+    assert "This is logged" in log
+    assert "Not logged" not in log
+
+
+def test_sigusr2_should_set_debug_logging(capsys):
+    setup_logging(min_level=logging.INFO, plaintext=True, stream=sys.stdout)
+    logging.debug("Not logged")
+    os.kill(os.getpid(), signal.SIGUSR2)
+    logging.debug("THIS is logged")
+
+    log = _readout_log(capsys)
+    assert "--- Logging error ---" not in log
+    assert log.count('\n') == 1, "Expecting single line of logging output"
+    assert "THIS is logged" in log
+    assert "Not logged" not in log
+
+
+def test_signal_handler_override_should_call_previous_handlers(capsys):
+    myhandler_run_count = 0
+
+    def myhandler(_s, _f):
+        nonlocal myhandler_run_count
+        myhandler_run_count += 1
+
+    signal.signal(signal.SIGUSR2, myhandler)
+    os.kill(os.getpid(), signal.SIGUSR2)
+
+    setup_logging(min_level=logging.INFO, plaintext=True, stream=sys.stdout)
+    os.kill(os.getpid(), signal.SIGUSR2)
+    logging.debug("Debugged!")
+
+    log = _readout_log(capsys)
+    assert "--- Logging error ---" not in log
+    assert 'Debugged!' in log
+    assert log.count('\n') == 1, "Expecting single line of logging output"
+    assert myhandler_run_count == 2
