@@ -3,6 +3,7 @@ import inspect
 import json
 import logging
 import os
+import signal
 import sys
 import threading
 from datetime import datetime, date, time
@@ -128,6 +129,23 @@ def _global_exception_handler(exc_type, value, traceback):
     logging.exception(f"Uncaught exception {exc_type.__name__}: {value}", exc_info=(exc_type, value, traceback))
 
 
+def _loglevel_signal_handler(loggers):
+    """
+    Handle SIGUSR1 and SIGUSR2. Sets log level to INFO on SIGUSR1 and DEBUG on SIGUSR2.
+    """
+
+    def make_signal_handler(level):
+        def handle_usr_signal(signalnum, frame):
+            logging.info(f"Setting log level to {logging.getLevelName(level)}")
+            for logger in loggers:
+                logger.setLevel(level)
+
+        return handle_usr_signal
+
+    signal.signal(signal.SIGUSR1, make_signal_handler(logging.INFO))
+    signal.signal(signal.SIGUSR2, make_signal_handler(logging.DEBUG))
+
+
 def json_default(o):
     if isinstance(o, (date, datetime, time)):
         return o.isoformat()
@@ -199,6 +217,8 @@ def _setup_structured_logging(min_level, stream):
 
     sys.excepthook = _global_exception_handler
 
+    return [stream_handler, root_logger]
+
 
 def _setup_plaintext_logging(min_level, stream):
     formatter = Formatter(fmt="%(asctime)s %(levelname)-7s "
@@ -213,6 +233,8 @@ def _setup_plaintext_logging(min_level, stream):
     _remove_existing_stream_handlers()
     root_logger.addHandler(stream_handler)
     root_logger.setLevel(min_level)
+
+    return [stream_handler, root_logger]
 
 
 def _override_log_handlers():
@@ -262,9 +284,11 @@ def setup_logging(min_level=logging.INFO, plaintext=None, stream=None, override=
         stream = sys.stderr if plaintext else sys.stdout
 
     if plaintext:
-        _setup_plaintext_logging(min_level, stream)
+        loggers = _setup_plaintext_logging(min_level, stream)
     else:
-        _setup_structured_logging(min_level, stream)
+        loggers = _setup_structured_logging(min_level, stream)
+
+    _loglevel_signal_handler(loggers)
 
     if override:
         _override_log_handlers()
