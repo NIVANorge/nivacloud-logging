@@ -132,18 +132,32 @@ def _global_exception_handler(exc_type, value, traceback):
 def _loglevel_signal_handler(loggers):
     """
     Handle SIGUSR1 and SIGUSR2. Sets log level to INFO on SIGUSR1 and DEBUG on SIGUSR2.
+
+    After setting level, it calls the previous SIGUSRx handler unless it was set to SIG_DFL.
     """
+    usr_signals = {
+        signal.SIGUSR1: logging.INFO,
+        signal.SIGUSR2: logging.DEBUG,
+    }
 
-    def make_signal_handler(level):
-        def handle_usr_signal(signalnum, frame):
-            logging.info(f"Setting log level to {logging.getLevelName(level)}")
-            for logger in loggers:
-                logger.setLevel(level)
+    previous_handlers = {
+        signalnum: handler
+        for (signalnum, handler)
+        in zip(usr_signals, map(signal.getsignal, usr_signals))
+        if handler != signal.SIG_DFL
+    }
 
-        return handle_usr_signal
+    def handle_usr_signal(signalnum, _frame):
+        level = usr_signals[signalnum]
+        for logger in loggers:
+            logger.setLevel(level)
 
-    signal.signal(signal.SIGUSR1, make_signal_handler(logging.INFO))
-    signal.signal(signal.SIGUSR2, make_signal_handler(logging.DEBUG))
+        previous_handler = previous_handlers.get(signalnum)
+        if previous_handler:
+            previous_handler(signalnum, _frame)
+
+    signal.signal(signal.SIGUSR1, handle_usr_signal)
+    signal.signal(signal.SIGUSR2, handle_usr_signal)
 
 
 def json_default(o):
@@ -288,7 +302,7 @@ def setup_logging(min_level=logging.INFO, plaintext=None, stream=None, override=
     else:
         loggers = _setup_structured_logging(min_level, stream)
 
-    _loglevel_signal_handler(loggers)
-
     if override:
         _override_log_handlers()
+
+    _loglevel_signal_handler(loggers)
