@@ -57,8 +57,11 @@ class LogContext:
                 setattr(self.__context, ctx_key, previous)
 
     @classmethod
-    def getcontext(cls):
-        return cls.__context.__dict__.copy()
+    def getcontext(cls, key=None):
+        if key is None:
+            return cls.__context.__dict__.copy()
+        else:
+            return cls.__context.__dict__.get(key)
 
 
 def log_context(**ctxargs):
