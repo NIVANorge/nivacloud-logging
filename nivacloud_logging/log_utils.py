@@ -253,11 +253,11 @@ def _setup_plaintext_logging(min_level, stream):
 
 def _override_log_handlers():
     loggers = logging.root.manager.loggerDict.values()
-    for logger in loggers:
-        logger.propagate = True
+    for logger in [logging.root, *loggers]:
         if hasattr(logger, 'handlers'):
-            for handler in logger.handlers:
-                logger.removeHandler(handler)
+            for handler in logger.handlers[:]:
+                if not isinstance(handler, _LogContextHandler):
+                    logger.removeHandler(handler)
         logger.propagate = True
 
 

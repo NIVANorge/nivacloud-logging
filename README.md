@@ -9,10 +9,10 @@ Normally, you would just call `setup_logging()` and start logging and
 set the `NIVACLOUD_PLAINTEXT_LOGS` if you want plaintext (human-readable)
 logs instead of JSON. Default is JSON.
 
-By default it will override loggers to make sure that we get all the
+By default it will override all loggers to make sure that we get all the
 logs through our handler. (So that everything is formatted as JSON and
 ends up on stdout for Docker logs.) This feels slightly hacky, but I
-think it's okay for our usecase. If you need to disable this, set
+think it's okay for our use-case. If you need to disable this, set
 `NIVACLOUD_OVERRIDE_LOGGERS` to `0`.
 
 ```python
