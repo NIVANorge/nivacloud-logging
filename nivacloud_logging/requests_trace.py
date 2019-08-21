@@ -1,8 +1,6 @@
-import random
-
 from requests.adapters import HTTPAdapter
 
-from nivacloud_logging.log_utils import LogContext
+from nivacloud_logging.log_utils import LogContext, generate_trace_id
 
 
 class TracingAdapter(HTTPAdapter):
@@ -20,4 +18,4 @@ class TracingAdapter(HTTPAdapter):
     def add_headers(self, request, **kwargs):
         super().add_headers(request, **kwargs)
         incoming_trace_id = LogContext.getcontext("trace_id")
-        request.headers['Trace-Id'] = incoming_trace_id or f"{random.randint(0, 2 ** 128 - 1):x}"
+        request.headers['Trace-Id'] = incoming_trace_id or generate_trace_id()
