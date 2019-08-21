@@ -1,6 +1,17 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup
 
+OPTIONAL_REQUIREMENTS = {
+    # These are optional dependencies needed for tracing:
+    'requests': ["requests>=2.22.0"],
+    'flask': ["Flask>=1.1.0"],
+}
+
+TEST_REQUIREMENTS = [
+    # ...but we always need them for testing:
+    req for reqs in OPTIONAL_REQUIREMENTS.values() for req in reqs
+]
+
 setup(
     name='nivacloud-logging',
 
@@ -48,11 +59,8 @@ setup(
     tests_require=[
         "pytest>=4.4.0",
         "pytest-asyncio>=0.10.0",
-        "requests>=2.22.0",
+        *TEST_REQUIREMENTS,
     ],
-    extras_require={
-        # These are optional dependencies for tracing:
-        'requests': ["requests>=2.22.0"],
-    },
+    extras_require=OPTIONAL_REQUIREMENTS,
     packages=["nivacloud_logging"]
 )
