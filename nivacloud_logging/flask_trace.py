@@ -1,3 +1,6 @@
+import logging
+import time
+
 from nivacloud_logging.log_utils import LogContext
 
 
@@ -16,8 +19,24 @@ class TracingMiddleware:
 
     def __call__(self, environ, start_response):
         trace_id = environ.get('HTTP_TRACE_ID')
+
+        def execute_traced_request():
+            t0 = time.monotonic()
+            r = self.app(environ, start_response)
+            elapsed = time.monotonic() - t0
+            logging.info(
+                f"{environ.get('REQUEST_METHOD')} {environ.get('REQUEST_URI')} "
+                f"{environ.get('SERVER_PROTOCOL')} from {environ.get('REMOTE_ADDR')}",
+                extra={
+                    'elapsed_ms': elapsed,
+                    'request_uri': environ.get('REQUEST_URI'),
+                    'remote_addr': environ.get('REMOTE_ADDR'),
+                    'server_protocol': environ.get('SERVER_PROTOCOL'),
+                })
+            return r
+
         if trace_id:
             with LogContext(trace_id=trace_id):
-                return self.app(environ, start_response)
+                return execute_traced_request()
         else:
-            return self.app(environ, start_response)
+            return execute_traced_request()
