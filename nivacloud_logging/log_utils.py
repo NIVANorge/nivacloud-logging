@@ -3,6 +3,7 @@ import inspect
 import json
 import logging
 import os
+import random
 import signal
 import sys
 import threading
@@ -57,8 +58,11 @@ class LogContext:
                 setattr(self.__context, ctx_key, previous)
 
     @classmethod
-    def getcontext(cls):
-        return cls.__context.__dict__.copy()
+    def getcontext(cls, key=None):
+        if key is None:
+            return cls.__context.__dict__.copy()
+        else:
+            return cls.__context.__dict__.get(key)
 
 
 def log_context(**ctxargs):
@@ -118,6 +122,14 @@ def auto_context(*context_args: str):
         return auto_ctx_wrapper
 
     return meta_wrap
+
+
+def generate_trace_id():
+    """
+    Create a random number formatted as a hexadecimal string, suitable for use
+    as a trace identifier.
+    """
+    return f"{random.randint(0, 2 ** 128 - 1):x}"
 
 
 def _global_exception_handler(exc_type, value, traceback):

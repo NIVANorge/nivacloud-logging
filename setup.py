@@ -1,13 +1,24 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup
 
+OPTIONAL_REQUIREMENTS = {
+    # These are optional dependencies needed for tracing:
+    'requests': ["requests>=2.22.0"],
+    'flask': ["Flask>=1.1.0"],
+}
+
+TEST_REQUIREMENTS = [
+    # ...but we always need them for testing:
+    req for reqs in OPTIONAL_REQUIREMENTS.values() for req in reqs
+]
+
 setup(
     name='nivacloud-logging',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.5.1',
+    version='0.7.0',
 
     description="Utils for setting up logging used in nivacloud application",
     long_description_content_type='text/markdown',
@@ -48,6 +59,8 @@ setup(
     tests_require=[
         "pytest>=4.4.0",
         "pytest-asyncio>=0.10.0",
+        *TEST_REQUIREMENTS,
     ],
+    extras_require=OPTIONAL_REQUIREMENTS,
     packages=["nivacloud_logging"]
 )
