@@ -59,6 +59,20 @@ r = session.get("https://httpbin.org/headers")
 print(f"Trace-ID is {r.json()['headers'].get('Trace-Id')}")
 ```
 
+### Tracing with aiohttp client
+
+To add a `Trace-Id` header to outgoing requests, add a `TraceConfig`
+to your session that adds a trace ID to your headers in the same way
+that the Requests tracing adapter does.
+
+```python
+async with aiohttp.ClientSession(trace_configs=[create_trace_config()]) as session, \
+        LogContext(trace_id='abc123'), \
+        session.get('https://httpbin.org/headers') as response:
+    r = await response.json()
+    print(f"Trace-ID is {r['headers'].get('Trace-Id')}")
+```
+
 ### Tracing with Flask
 
 To set `trace_id` in `LogContext` for incoming requests based on the
