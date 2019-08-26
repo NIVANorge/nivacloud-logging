@@ -48,7 +48,6 @@ def test_trace_id_is_injected(capsys):
 
     @app.route("/")
     def hello():
-        logging.info("HEI!")
         return jsonify({"Trace-ID": LogContext.getcontext("trace_id")})
 
     client = app.test_client()
