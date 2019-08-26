@@ -1,7 +1,8 @@
 # Nivacloud-logging
 
-A set of shared utils for setting up logging in a consistent way in
-the [nivacloud](https://github.com/NIVANorge/nivacloud) ecosystem.
+A set of shared utils for setting up logging and tracing in a
+consistent way in the
+[nivacloud](https://github.com/NIVANorge/nivacloud) ecosystem.
 
 ## Usage
 
@@ -24,7 +25,7 @@ logging.info("something happened")
 
 with LogContext(my_id=123):
     logging.info("something happened with some context attached")
-    
+
 @log_context(something="foo")
 def myfun(x):
     logging.info("I'm adding 1 to X and outputting 'something'!")
@@ -33,7 +34,7 @@ def myfun(x):
 
 ### Runtime configuration
 
-If you want to tweak the log level of a running service, you can 
+If you want to tweak the log level of a running service, you can
 send `SIGUSR1` to set `INFO` level debugging and `SIGUSR2` to set
 `DEBUG` level debugging.
 
@@ -43,7 +44,35 @@ To work with Gunicorn, you need to start `gunicorn` with the `--preload`
 option so that `setup_logging` has a chance to run first. Also
 `--access-logfile -` is needed for access logs.
 
-### Running tests
+### Tracing with Requests
+
+In order to add a `Trace-Id` header to outgoing requests, there is an
+adapter that will either pick up `trace_id` from the `LogContext` or
+generate one with `generate_trace_id` when there is none in the log
+context.
+
+```python
+session = requests.Session()
+session.mount('http://', TracingAdapter())
+session.mount('https://', TracingAdapter())
+r = session.get("https://httpbin.org/headers")
+print(f"Trace-ID is {r.json()['headers'].get('Trace-Id')}")
+```
+
+### Tracing with Flask
+
+To set `trace_id` in `LogContext` for incoming requests based on the
+value of the `Trace-Id` header, use the `TracingMiddleware` like so:
+
+```python
+app = Flask(__name__)
+app.wsgi_app = TracingMiddleware(app.wsgi_app)
+```
+
+This will also generate log entries for each requests. (In addition to
+access log entries. This should be improved at some point.)
+
+## Running tests
 
 ```
 $ python setup.py test
@@ -51,12 +80,12 @@ $ python setup.py test
 
 Or just run `pytest` if you have all packages installed.
 
-#### Quirks
+### Quirks
 
-With [pytest](https://docs.pytest.org/en/latest/) you would normally 
+With [pytest](https://docs.pytest.org/en/latest/) you would normally
 use *caplog* to check log messages, but we're testing the logging
 itself here, so it makes more sense to use *capsys* to read the
-actual text output. 
+actual text output.
 
 ## Intended audience
 
