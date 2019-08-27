@@ -25,11 +25,11 @@ class TracingMiddleware:
             r = self.app(environ, start_response)
             elapsed = time.monotonic() - t0
             logging.info(
-                f"{environ.get('REQUEST_METHOD')} {environ.get('REQUEST_URI')} "
+                f"{environ.get('REQUEST_METHOD')} {environ.get('RAW_URI')} "
                 f"{environ.get('SERVER_PROTOCOL')} from {environ.get('REMOTE_ADDR')}",
                 extra={
                     'elapsed_ms': elapsed,
-                    'request_uri': environ.get('REQUEST_URI'),
+                    'raw_uri': environ.get('RAW_URI'),
                     'remote_addr': environ.get('REMOTE_ADDR'),
                     'server_protocol': environ.get('SERVER_PROTOCOL'),
                 })
