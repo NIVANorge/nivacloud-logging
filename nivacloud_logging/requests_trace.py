@@ -5,7 +5,9 @@ from nivacloud_logging.log_utils import LogContext, generate_trace_id
 
 class TracingAdapter(HTTPAdapter):
     """
-    Subclass of HTTPAdapter that adds a Trace-Id header if not already supplied.
+    Subclass of HTTPAdapter that:
+     1. Adds Trace-Id if it exists in LogContext.
+     2. Adds Span-Id if it exists in LogContext or auto-generates it otherwise.
 
     Sample usage:
         session = requests.Session()
@@ -18,4 +20,6 @@ class TracingAdapter(HTTPAdapter):
     def add_headers(self, request, **kwargs):
         super().add_headers(request, **kwargs)
         incoming_trace_id = LogContext.getcontext("trace_id")
-        request.headers['Trace-Id'] = incoming_trace_id or generate_trace_id()
+        if incoming_trace_id:
+            request.headers['Trace-Id'] = incoming_trace_id
+        request.headers['Span-Id'] = LogContext.getcontext("span_id") or generate_trace_id()

@@ -46,24 +46,23 @@ option so that `setup_logging` has a chance to run first. Also
 
 ### Tracing with Requests
 
-In order to add a `Trace-Id` header to outgoing requests, there is an
-adapter that will either pick up `trace_id` from the `LogContext` or
-generate one with `generate_trace_id` when there is none in the log
-context.
+In order to add `Span-Id` and `Trace-Id` headers to outgoing requests,
+there is an adapter that will pick up `trace_id`/`span_id` from the
+*LogContext*, alternatively generating `Span-Id` if one doesn't exist.
 
 ```python
 session = requests.Session()
 session.mount('http://', TracingAdapter())
 session.mount('https://', TracingAdapter())
 r = session.get("https://httpbin.org/headers")
-print(f"Trace-ID is {r.json()['headers'].get('Trace-Id')}")
+print(f"Span-Id is {r.json()['headers'].get('Span-Id')}")
 ```
 
 ### Tracing with aiohttp client
 
-To add a `Trace-Id` header to outgoing requests, add a `TraceConfig`
-to your session that adds a trace ID to your headers in the same way
-that the Requests tracing adapter does.
+To add `Trace-Id` and `Span-Id` headers to outgoing requests, add a
+`TraceConfig` to your session that adds trace IDs and span IDs to your
+headers in the same way that the Requests tracing adapter does.
 
 ```python
 async with aiohttp.ClientSession(trace_configs=[create_trace_config()]) as session, \
@@ -75,8 +74,9 @@ async with aiohttp.ClientSession(trace_configs=[create_trace_config()]) as sessi
 
 ### Tracing with Flask
 
-To set `trace_id` in `LogContext` for incoming requests based on the
-value of the `Trace-Id` header, use the `TracingMiddleware` like so:
+To set `trace_id` and `span_id` in `LogContext` for incoming requests
+based on the value of the `Trace-Id` and `Span-Id` headers, use the
+`TracingMiddleware` like so:
 
 ```python
 app = Flask(__name__)

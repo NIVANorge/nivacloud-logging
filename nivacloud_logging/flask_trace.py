@@ -1,7 +1,7 @@
 import logging
 import time
 
-from nivacloud_logging.log_utils import LogContext
+from nivacloud_logging.log_utils import LogContext, generate_trace_id
 
 
 class TracingMiddleware:
@@ -19,6 +19,7 @@ class TracingMiddleware:
 
     def __call__(self, environ, start_response):
         trace_id = environ.get('HTTP_TRACE_ID')
+        span_id = environ.get('HTTP_SPAN_ID') or generate_trace_id()
 
         def execute_traced_request():
             t0 = time.monotonic()
@@ -36,7 +37,8 @@ class TracingMiddleware:
             return r
 
         if trace_id:
-            with LogContext(trace_id=trace_id):
+            with LogContext(trace_id=trace_id, span_id=span_id):
                 return execute_traced_request()
         else:
-            return execute_traced_request()
+            with LogContext(span_id=span_id):
+                return execute_traced_request()
