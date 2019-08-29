@@ -6,6 +6,7 @@ OPTIONAL_REQUIREMENTS = {
     'requests': ["requests>=2.22.0"],
     'flask': ["Flask>=1.1.0"],
     'aiohttp': ["aiohttp>=3.0.0"],
+    'starlette': ["starlette>=0.7.2"],
 }
 
 TEST_REQUIREMENTS = [
