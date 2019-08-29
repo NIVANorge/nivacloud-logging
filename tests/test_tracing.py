@@ -13,7 +13,7 @@ from nivacloud_logging.aiohttp_trace import create_client_trace_config
 from nivacloud_logging.flask_trace import TracingMiddleware
 from nivacloud_logging.log_utils import setup_logging, LogContext
 from nivacloud_logging.requests_trace import TracingAdapter
-from starlette_trace import StarletteTracingMiddleware
+from nivacloud_logging.starlette_trace import StarletteTracingMiddleware
 
 
 def _create_tracing_requests_session():
