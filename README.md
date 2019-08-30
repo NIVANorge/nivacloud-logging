@@ -38,11 +38,30 @@ If you want to tweak the log level of a running service, you can
 send `SIGUSR1` to set `INFO` level debugging and `SIGUSR2` to set
 `DEBUG` level debugging.
 
-### With Gunicorn
+### Running with Gunicorn
 
-To work with Gunicorn, you need to start `gunicorn` with the `--preload`
-option so that `setup_logging` has a chance to run first. Also
-`--access-logfile -` is needed for access logs.
+If you want access logs, pass `--access-logfile -` to Gunicorn.
+
+#### --preload
+
+If you don't want Gunicorn spitting out logs before you have a chance
+to run `setup_logging`, you can start Gunicorn with `--preload`, but
+**ACHTUNG**, if you have code like this...
+
+```python
+db = MyDb.connect()
+
+@app.route("/")
+def something():
+    db.get("foo")
+```
+
+...and run Gunicorn with more than one worker process, they may be
+sharing the file descriptors (sockets, in this case) inherited from
+the parent process, and there will be no synchronization between them,
+so in the worst case this may cause data corruption. (It doesn't
+matter if the library used claims to be thread-safe, because these
+are processes, not threads, so they don't know about each other.)
 
 ### Tracing with Requests
 
@@ -85,6 +104,15 @@ app.wsgi_app = TracingMiddleware(app.wsgi_app)
 
 This will also generate log entries for each requests. (In addition to
 access log entries. This should be improved at some point.)
+
+### Tracing with Starlette
+
+To get the same functionality as for Flask (see above), do this:
+
+```python
+app = Starlette()
+app.add_middleware(StarletteTracingMiddleware)
+```
 
 ## Running tests
 
