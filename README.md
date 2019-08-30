@@ -40,13 +40,18 @@ send `SIGUSR1` to set `INFO` level debugging and `SIGUSR2` to set
 
 ### Running with Gunicorn
 
-If you want access logs, pass `--access-logfile -` to Gunicorn.
+If you want access logs, pass `--access-logfile -` to Gunicorn. If
+you want to override Gunicorn's log format before it starts
+outputting logs, you can supply the `Logger` class from
+`gunicorn_logger`, like this:
+
+```
+gunicorn --logger-class nivacloud_logging.gunicorn_logger.Logger
+```
 
 #### --preload
 
-If you don't want Gunicorn spitting out logs before you have a chance
-to run `setup_logging`, you can start Gunicorn with `--preload`, but
-**ACHTUNG**, if you have code like this...
+Don't use `--preload`, because we have a bunch of code like this:
 
 ```python
 db = MyDb.connect()
@@ -56,12 +61,13 @@ def something():
     db.get("foo")
 ```
 
-...and run Gunicorn with more than one worker process, they may be
-sharing the file descriptors (sockets, in this case) inherited from
-the parent process, and there will be no synchronization between them,
-so in the worst case this may cause data corruption. (It doesn't
-matter if the library used claims to be thread-safe, because these
-are processes, not threads, so they don't know about each other.)
+In cases like this, when you run Gunicorn with more than one worker
+process, they may be sharing the file descriptors (sockets, in this
+case) inherited from the parent process, and there will be no
+synchronization between them, so in the worst case this may cause data
+corruption. (It doesn't matter if the library used claims to be
+thread-safe, because these are processes, not threads, so they don't
+know about each other.)
 
 ### Tracing with Requests
 

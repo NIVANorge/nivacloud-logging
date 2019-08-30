@@ -7,6 +7,7 @@ OPTIONAL_REQUIREMENTS = {
     'flask': ["Flask>=1.1.0"],
     'aiohttp': ["aiohttp>=3.0.0"],
     'starlette': ["starlette>=0.7.2"],
+    'gunicorn': ["gunicorn>=19.0.0"],
 }
 
 TEST_REQUIREMENTS = [
@@ -20,7 +21,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.8.2',
+    version='0.8.3rc1',
 
     description="Utils for setting up logging used in nivacloud application",
     long_description_content_type='text/markdown',
