@@ -29,7 +29,7 @@ class TracingMiddleware:
                 f"{environ.get('REQUEST_METHOD')} {environ.get('RAW_URI')} "
                 f"{environ.get('SERVER_PROTOCOL')} from {environ.get('REMOTE_ADDR')}",
                 extra={
-                    'elapsed_ms': elapsed,
+                    'elapsed_s': elapsed,
                     'raw_uri': environ.get('RAW_URI'),
                     'remote_addr': environ.get('REMOTE_ADDR'),
                     'server_protocol': environ.get('SERVER_PROTOCOL'),
