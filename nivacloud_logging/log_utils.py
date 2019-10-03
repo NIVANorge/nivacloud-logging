@@ -64,6 +64,16 @@ class LogContext:
         else:
             return cls.__context.__dict__.get(key)
 
+    @classmethod
+    def update_commit_id(cls, commit_id):
+        """This is only meant to be called from setup_logging."""
+        if commit_id and commit_id != 'unknown':
+            setattr(cls.__context, "git_commit_id", commit_id)
+        # This is here so that multiple tests will work despite breaking
+        # the ordinary context manager-based LogContext contract.
+        elif hasattr(cls.__context, "git_commit_id"):
+            delattr(cls.__context, "git_commit_id")
+
 
 def log_context(**ctxargs):
     """
@@ -299,6 +309,8 @@ def setup_logging(min_level=logging.INFO, plaintext=None, stream=None, override=
 
     if override is None:
         override = os.getenv('NIVACLOUD_OVERRIDE_LOGGERS', '1').lower() in ('1', 'true', 't')
+
+    LogContext.update_commit_id(os.getenv('GIT_COMMIT_ID'))
 
     # This is a work-around to be able to run tests with pytest's output
     # capture when threading. (It doesn't work when you set it as a

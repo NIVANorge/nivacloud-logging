@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import math
 import os
 import re
 import signal
@@ -9,7 +10,6 @@ import time
 from datetime import datetime
 from uuid import UUID
 
-import math
 import pytest
 
 from nivacloud_logging.log_utils import setup_logging, LogContext, auto_context
@@ -404,3 +404,25 @@ def test_signal_handler_override_should_call_previous_handlers(capsys):
     assert 'Debugged!' in log
     assert log.count('\n') == 1, "Expecting single line of logging output"
     assert myhandler_run_count == 2
+
+
+def test_should_add_commit_it_from_environment(capsys, monkeypatch):
+    monkeypatch.setenv('GIT_COMMIT_ID', 'd22b929')
+    setup_logging(plaintext=True, stream=sys.stdout)
+    logging.info('Something committed')
+
+    log = _readout_log(capsys)
+    assert "--- Logging error ---" not in log
+    assert "Something committed" in log
+    assert '[git_commit_id="d22b929"]' in log
+
+
+def test_should_not_add_commit_id_context_on_missing_env(capsys, monkeypatch):
+    monkeypatch.setenv('GIT_COMMIT_ID', '')
+    setup_logging(plaintext=True, stream=sys.stdout)
+    logging.info('Something committed')
+
+    log = _readout_log(capsys)
+    assert "--- Logging error ---" not in log
+    assert "Something committed" in log
+    assert 'git_commit_id' not in log

@@ -376,3 +376,23 @@ def test_signal_handler_override_should_call_previous_handlers(capsys):
     log_json = _readout_json(capsys)
     assert log_json['message'] == 'Debugged!'
     assert myhandler_run_count == 2
+
+
+def test_should_add_commit_it_from_environment(capsys, monkeypatch):
+    monkeypatch.setenv('GIT_COMMIT_ID', 'd22b929')
+    setup_logging()
+    logging.info('Something committed')
+
+    log_json = _readout_json(capsys)
+    assert log_json['message'] == 'Something committed'
+    assert log_json['git_commit_id'] == 'd22b929'
+
+
+def test_should_not_add_commit_id_context_on_missing_env(capsys, monkeypatch):
+    monkeypatch.setenv('GIT_COMMIT_ID', '')
+    setup_logging()
+    logging.info('Something committed')
+
+    log_json = _readout_json(capsys)
+    assert log_json['message'] == 'Something committed'
+    assert 'git_commit_id' not in log_json
