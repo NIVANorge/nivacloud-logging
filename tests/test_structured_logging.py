@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import math
 import os
 import signal
 import threading
@@ -8,7 +9,6 @@ import time
 from datetime import datetime
 from uuid import UUID
 
-import math
 import pytest
 
 from nivacloud_logging.log_utils import setup_logging, LogContext, auto_context
@@ -388,6 +388,36 @@ def test_should_add_commit_it_from_environment(capsys, monkeypatch):
     assert log_json['git_commit_id'] == 'd22b929'
 
 
+def test_should_add_commit_it_from_environment_to_all_threads(capsys, monkeypatch):
+    monkeypatch.setenv('GIT_COMMIT_ID', 'deadbeef')
+    setup_logging()
+
+    def worker():
+        with LogContext(tid="child"):
+            logging.info("Hi from child!")
+            time.sleep(0.02)
+
+    t = threading.Thread(target=worker)
+    t.start()
+
+    time.sleep(0.01)
+    with LogContext(tid="parent"):
+        logging.info("Hi from parent!")
+
+    t.join()
+
+    (out, _) = capsys.readouterr()
+    [child, parent] = [json.loads(s) for s in out.split("\n") if s]
+
+    assert child["tid"] == "child"
+    assert child["message"] == "Hi from child!"
+    assert parent["tid"] == "parent"
+    assert parent["message"] == "Hi from parent!"
+    assert child["thread"] != parent["thread"]
+    assert child["git_commit_id"] == "deadbeef"
+    assert parent["git_commit_id"] == "deadbeef"
+
+
 def test_should_not_add_commit_id_context_on_missing_env(capsys, monkeypatch):
     monkeypatch.setenv('GIT_COMMIT_ID', '')
     setup_logging()
@@ -396,3 +426,20 @@ def test_should_not_add_commit_id_context_on_missing_env(capsys, monkeypatch):
     log_json = _readout_json(capsys)
     assert log_json['message'] == 'Something committed'
     assert 'git_commit_id' not in log_json
+
+
+def test_local_should_override_global_context(capsys):
+    setup_logging()
+    LogContext.set_default("attire", "barbecue suit")
+
+    logging.info('Global')
+    with LogContext(attire='grilldress'):
+        logging.info('Local')
+
+    (out, _) = capsys.readouterr()
+    [global_, local] = [json.loads(s) for s in out.split("\n") if s]
+
+    assert global_["message"] == 'Global'
+    assert local["message"] == 'Local'
+    assert global_["attire"] == 'barbecue suit'
+    assert local["attire"] == 'grilldress'

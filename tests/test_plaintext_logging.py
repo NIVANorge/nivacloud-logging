@@ -417,6 +417,39 @@ def test_should_add_commit_it_from_environment(capsys, monkeypatch):
     assert '[git_commit_id="d22b929"]' in log
 
 
+def test_should_add_commit_it_from_environment_to_all_threads(capsys, monkeypatch):
+    monkeypatch.setenv('GIT_COMMIT_ID', 'deadbeef')
+    setup_logging(stream=sys.stdout, plaintext=True)
+
+    def worker():
+        with LogContext(tid="child"):
+            logging.info("Hi from child!")
+            time.sleep(0.02)
+
+    t = threading.Thread(target=worker)
+    t.start()
+
+    time.sleep(0.01)
+    with LogContext(tid="parent"):
+        logging.info("Hi from parent!")
+
+    t.join()
+
+    (log, _) = capsys.readouterr()
+    [child, parent] = log.split('\n')[0:2]
+
+    assert 'tid="child"' in child
+    assert "Hi from child!" in child
+    assert 'tid="parent"' in parent
+    assert "Hi from parent!" in parent
+
+    assert "--- Logging error ---" not in child
+    assert "--- Logging error ---" not in parent
+
+    assert 'git_commit_id="deadbeef"' in child
+    assert 'git_commit_id="deadbeef"' in parent
+
+
 def test_should_not_add_commit_id_context_on_missing_env(capsys, monkeypatch):
     monkeypatch.setenv('GIT_COMMIT_ID', '')
     setup_logging(plaintext=True, stream=sys.stdout)
@@ -426,3 +459,22 @@ def test_should_not_add_commit_id_context_on_missing_env(capsys, monkeypatch):
     assert "--- Logging error ---" not in log
     assert "Something committed" in log
     assert 'git_commit_id' not in log
+
+
+def test_local_should_override_global_context(capsys):
+    setup_logging(plaintext=True, stream=sys.stdout)
+    LogContext.set_default("attire", "barbecue suit")
+
+    logging.info('Global')
+    with LogContext(attire='grilldress'):
+        logging.info('Local')
+
+    (log, _) = capsys.readouterr()
+    [global_, local] = log.split('\n')[0:2]
+
+    assert "--- Logging error ---" not in log
+
+    assert 'Global' in global_
+    assert 'Local' in local
+    assert 'attire="barbecue suit"' in global_
+    assert 'attire="grilldress"' in local
