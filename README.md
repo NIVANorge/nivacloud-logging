@@ -10,6 +10,10 @@ Normally, you would just call `setup_logging()` and start logging and
 set the `NIVACLOUD_PLAINTEXT_LOGS` if you want plaintext (human-readable)
 logs instead of JSON. Default is JSON.
 
+If the `GIT_COMMIT_ID` environment variable is set, a `git_commit_id`
+default context containing this will be added to all threads when 
+`setup_logging()` is executed.
+
 By default it will override all loggers to make sure that we get all the
 logs through our handler. (So that everything is formatted as JSON and
 ends up on stdout for Docker logs.) This feels slightly hacky, but I
