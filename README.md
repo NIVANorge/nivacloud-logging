@@ -94,7 +94,9 @@ To add `Trace-Id` and `Span-Id` headers to outgoing requests, add a
 headers in the same way that the Requests tracing adapter does.
 
 ```python
-async with aiohttp.ClientSession(trace_configs=[create_trace_config()]) as session, \
+from nivacloud_logging.aiohttp_trace import create_client_trace_config
+
+async with aiohttp.ClientSession(trace_configs=[create_client_trace_config()]) as session, \
         LogContext(trace_id='abc123'), \
         session.get('https://httpbin.org/headers') as response:
     r = await response.json()
