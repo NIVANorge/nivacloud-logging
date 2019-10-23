@@ -82,6 +82,29 @@ class LogContext:
             cls.__default_context = {}
 
 
+# noinspection PyPep8Naming
+class log_exceptions:
+    """
+    A context manager that logs exceptions. Will by default re-raise, but
+    can swallow instead if suppress is set to True.
+
+    Sample usage:
+        with LogContext(abc="def"), log_exceptions():
+            raise Exception("I'm in your code, raising exceptions!")
+    """
+
+    def __init__(self, suppress=False):
+        self._suppress = suppress
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None:
+            logging.exception(exc_val, exc_info=(exc_type, exc_val, exc_tb))
+        return self._suppress
+
+
 def log_context(**ctxargs):
     """
     A decorator that wraps a function using the LogContext class.

@@ -22,13 +22,16 @@ think it's okay for our use-case. If you need to disable this, set
 
 ```python
 import logging
-from nivacloud_logging.log_utils import setup_logging, LogContext, log_context
+from nivacloud_logging.log_utils import setup_logging, LogContext, log_context, log_exceptions
 
 setup_logging()
 logging.info("something happened")
 
 with LogContext(my_id=123):
     logging.info("something happened with some context attached")
+
+with LogContext(fjas="xyzzy"), log_exceptions():
+    raise Exception("Log this exception, preserving context, then re-raise")
 
 @log_context(something="foo")
 def myfun(x):

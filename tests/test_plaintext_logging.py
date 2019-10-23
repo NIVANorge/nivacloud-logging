@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import math
 import os
@@ -12,7 +13,7 @@ from uuid import UUID
 
 import pytest
 
-from nivacloud_logging.log_utils import setup_logging, LogContext, auto_context
+from nivacloud_logging.log_utils import setup_logging, LogContext, auto_context, log_exceptions
 
 
 def _readout_log(capsys):
@@ -478,3 +479,39 @@ def test_local_should_override_global_context(capsys):
     assert 'Local' in local
     assert 'attire="barbecue suit"' in global_
     assert 'attire="grilldress"' in local
+
+
+def test_log_exceptions_context_should_log_exceptions(capsys):
+    setup_logging(plaintext=True, stream=sys.stdout)
+
+    with contextlib.suppress(Exception), LogContext(wtf='bbq'), log_exceptions():
+        logging.info('In log context')
+        raise Exception("In context manager")
+
+    (log, _) = capsys.readouterr()
+    [in_ctx, in_ctx_man] = log.split('\n')[0:2]
+
+    assert "--- Logging error ---" not in log
+
+    assert 'In log context' in in_ctx
+    assert 'In context manager' in in_ctx_man
+    assert 'wtf="bbq"' in in_ctx
+    assert 'wtf="bbq"' in in_ctx_man
+
+
+def test_log_exceptions_suppress(capsys):
+    setup_logging(plaintext=True, stream=sys.stdout)
+
+    with LogContext(wtf='bbq'), log_exceptions(suppress=True):
+        logging.info('In log context')
+        raise Exception("In context manager")
+
+    (log, _) = capsys.readouterr()
+    [in_ctx, in_ctx_man] = log.split('\n')[0:2]
+
+    assert "--- Logging error ---" not in log
+
+    assert 'In log context' in in_ctx
+    assert 'In context manager' in in_ctx_man
+    assert 'wtf="bbq"' in in_ctx
+    assert 'wtf="bbq"' in in_ctx_man

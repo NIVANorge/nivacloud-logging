@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import json
 import logging
 import math
@@ -11,7 +12,7 @@ from uuid import UUID
 
 import pytest
 
-from nivacloud_logging.log_utils import setup_logging, LogContext, auto_context
+from nivacloud_logging.log_utils import setup_logging, LogContext, auto_context, log_exceptions
 
 
 def _readout_json(capsys):
@@ -443,3 +444,35 @@ def test_local_should_override_global_context(capsys):
     assert local["message"] == 'Local'
     assert global_["attire"] == 'barbecue suit'
     assert local["attire"] == 'grilldress'
+
+
+def test_log_exceptions_context_should_log_exceptions(capsys):
+    setup_logging()
+
+    with contextlib.suppress(Exception), LogContext(wtf='bbq'), log_exceptions():
+        logging.info('In log context')
+        raise Exception("In context manager")
+
+    (out, _) = capsys.readouterr()
+    [in_ctx, in_ctx_man] = [json.loads(s) for s in out.split("\n") if s]
+
+    assert in_ctx['message'] == 'In log context'
+    assert in_ctx_man['message'] == 'In context manager'
+    assert in_ctx['wtf'] == 'bbq'
+    assert in_ctx_man['wtf'] == 'bbq'
+
+
+def test_log_exceptions_suppress(capsys):
+    setup_logging()
+
+    with LogContext(wtf='bbq'), log_exceptions(suppress=True):
+        logging.info('In log context')
+        raise Exception("In context manager")
+
+    (out, _) = capsys.readouterr()
+    [in_ctx, in_ctx_man] = [json.loads(s) for s in out.split("\n") if s]
+
+    assert in_ctx['message'] == 'In log context'
+    assert in_ctx_man['message'] == 'In context manager'
+    assert in_ctx['wtf'] == 'bbq'
+    assert in_ctx_man['wtf'] == 'bbq'
