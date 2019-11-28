@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
-import os
-import sys
 
 from setuptools import setup
-from setuptools.command.install import install
-
-VERSION = "0.8.11"
 
 OPTIONAL_REQUIREMENTS = {
     # These are optional dependencies needed for tracing:
@@ -21,24 +16,13 @@ TEST_REQUIREMENTS = [
     req for reqs in OPTIONAL_REQUIREMENTS.values() for req in reqs
 ]
 
-class VerifyVersionCommand(install):
-    """Custom command to verify that the git tag matches our version"""
-    description = 'verify that the git tag matches our version'
-
-    def run(self):
-        tag = os.getenv('CIRCLE_TAG')
-
-        if tag != VERSION:
-            info = f"Git tag = '{tag}', This does not match the version of this app: '{VERSION}'"
-            sys.exit(info)
-
 setup(
     name='nivacloud-logging',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version=VERSION,
+    version="0.8.11",
 
     description="Utils for setting up logging used in nivacloud application",
     long_description_content_type='text/markdown',
@@ -83,8 +67,5 @@ setup(
         *TEST_REQUIREMENTS,
     ],
     extras_require=OPTIONAL_REQUIREMENTS,
-    packages=["nivacloud_logging"],
-    cmdclass={
-        'verify': VerifyVersionCommand,
-    }
+    packages=["nivacloud_logging"]
 )
