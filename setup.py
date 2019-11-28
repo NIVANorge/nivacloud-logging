@@ -21,7 +21,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.8.7',
+    version='0.8.8',
 
     description="Utils for setting up logging used in nivacloud application",
     long_description_content_type='text/markdown',
@@ -29,8 +29,8 @@ setup(
     # The project's main homepage.
     url='https://github.com/NIVANorge/nivacloud-logging',
 
-    author='Håkon Drolsum Røkenes',
-    author_email="drhaakondr@gmail.com",
+    author='NIVA Environmental data science',
+    author_email="cloud@niva.no",
 
     license='MIT',
 
@@ -50,9 +50,9 @@ setup(
         'License :: OSI Approved :: MIT License',
 
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     install_requires=[
         "python-json-logger>=0.1.11,<0.2",
