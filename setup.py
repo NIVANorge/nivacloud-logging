@@ -5,7 +5,7 @@ import sys
 from setuptools import setup
 from setuptools.command.install import install
 
-VERSION = "0.8.8"
+VERSION = "0.8.9"
 
 OPTIONAL_REQUIREMENTS = {
     # These are optional dependencies needed for tracing:
