@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
+import os
+import sys
+
 from setuptools import setup
+from setuptools.command.install import install
+
+VERSION = "0.8.8"
 
 OPTIONAL_REQUIREMENTS = {
     # These are optional dependencies needed for tracing:
@@ -15,13 +21,24 @@ TEST_REQUIREMENTS = [
     req for reqs in OPTIONAL_REQUIREMENTS.values() for req in reqs
 ]
 
+class VerifyVersionCommand(install):
+    """Custom command to verify that the git tag matches our version"""
+    description = 'verify that the git tag matches our version'
+
+    def run(self):
+        tag = os.getenv('CIRCLE_TAG')
+
+        if tag != VERSION:
+            info = f"Git tag = '{tag}', This does not match the version of this app: '{VERSION}'"
+            sys.exit(info)
+
 setup(
     name='nivacloud-logging',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.8.7',
+    version=VERSION,
 
     description="Utils for setting up logging used in nivacloud application",
     long_description_content_type='text/markdown',
@@ -29,8 +46,8 @@ setup(
     # The project's main homepage.
     url='https://github.com/NIVANorge/nivacloud-logging',
 
-    author='Håkon Drolsum Røkenes',
-    author_email="drhaakondr@gmail.com",
+    author='NIVA Environmental data science',
+    author_email="cloud@niva.no",
 
     license='MIT',
 
@@ -50,9 +67,9 @@ setup(
         'License :: OSI Approved :: MIT License',
 
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     install_requires=[
         "python-json-logger>=0.1.11,<0.2",
@@ -66,5 +83,8 @@ setup(
         *TEST_REQUIREMENTS,
     ],
     extras_require=OPTIONAL_REQUIREMENTS,
-    packages=["nivacloud_logging"]
+    packages=["nivacloud_logging"],
+    cmdclass={
+        'verify': VerifyVersionCommand,
+    }
 )
