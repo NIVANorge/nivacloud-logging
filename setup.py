@@ -2,8 +2,8 @@
 
 from setuptools import setup
 
+# These are optional dependencies needed for tracing...
 OPTIONAL_REQUIREMENTS = {
-    # These are optional dependencies needed for tracing:
     'requests': ["requests>=2.22.0"],
     'flask': ["Flask>=1.1.0"],
     'aiohttp': ["aiohttp>=3.0.0"],
@@ -11,8 +11,8 @@ OPTIONAL_REQUIREMENTS = {
     'gunicorn': ["gunicorn>=19.0.0"],
 }
 
+# ...but we always need them for testing:
 TEST_REQUIREMENTS = [
-    # ...but we always need them for testing:
     req for reqs in OPTIONAL_REQUIREMENTS.values() for req in reqs
 ]
 
@@ -22,15 +22,15 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version="0.8.11",
+    version="0.8.12",
 
-    description="Utils for setting up logging used in nivacloud application",
+    description="Utils for setting up logging used in nivacloud applications",
     long_description_content_type='text/markdown',
 
     # The project's main homepage.
     url='https://github.com/NIVANorge/nivacloud-logging',
 
-    author='NIVA Environmental data science',
+    author='Norwegian Institute for Water Research',
     author_email="cloud@niva.no",
 
     license='MIT',
@@ -41,7 +41,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
 
         # Indicate who your project is intended for
         'Intended Audience :: Developers',

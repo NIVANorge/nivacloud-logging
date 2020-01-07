@@ -1,8 +1,13 @@
 # Nivacloud-logging
 
-A set of shared utils for setting up logging and tracing in a
-consistent way in the
-[nivacloud](https://github.com/NIVANorge/nivacloud) ecosystem.
+A set of shared utilities for setting up logging and tracing in a
+consistent way across [NIVA](https://www.niva.no/)'s Python-based
+cloud services.
+
+We're currently stuffing both regular application and system logs and
+traces into [StackDriver](https://cloud.google.com/stackdriver/) in
+Google Cloud, so this is for making (reasonably) sure that everything
+logs in a JSON format that StackDriver understands.
 
 ## Usage
 
@@ -11,7 +16,7 @@ set the `NIVACLOUD_PLAINTEXT_LOGS` if you want plaintext (human-readable)
 logs instead of JSON. Default is JSON.
 
 If the `GIT_COMMIT_ID` environment variable is set, a `git_commit_id`
-default context containing this will be added to all threads when 
+default context containing this will be added to all threads when
 `setup_logging()` is executed.
 
 By default it will override all loggers to make sure that we get all the
