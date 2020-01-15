@@ -22,7 +22,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version="0.8.13",
+    version="0.8.14",
 
     description="Utils for setting up logging used in nivacloud applications",
     long_description_content_type='text/markdown',
@@ -50,6 +50,9 @@ setup(
         # Pick your license as you wish (should match "license" above)
         'License :: OSI Approved :: MIT License',
 
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
     install_requires=[
