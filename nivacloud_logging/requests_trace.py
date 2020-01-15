@@ -19,9 +19,11 @@ class TracingAdapter(HTTPAdapter):
 
     def add_headers(self, request, **kwargs):
         super().add_headers(request, **kwargs)
-        if incoming_trace_id := LogContext.getcontext("trace_id"):
+        incoming_trace_id = LogContext.getcontext("trace_id")
+        if incoming_trace_id:
             request.headers['Trace-Id'] = incoming_trace_id
 
-        if incoming_user_id := LogContext.getcontext("user_id"):
+        incoming_user_id = LogContext.getcontext("user_id")
+        if incoming_user_id:
             request.headers["User-Id"] = incoming_user_id
         request.headers['Span-Id'] = LogContext.getcontext("span_id") or generate_trace_id()
