@@ -83,7 +83,7 @@ know about each other.)
 
 ### Tracing with Requests
 
-In order to add `Span-Id` and `Trace-Id` headers to outgoing requests,
+In order to add `Span-Id`, `User-Id` and `Trace-Id` headers to outgoing requests,
 there is an adapter that will pick up `trace_id`/`span_id` from the
 *LogContext*, alternatively generating `Span-Id` if one doesn't exist.
 
@@ -113,8 +113,8 @@ async with aiohttp.ClientSession(trace_configs=[create_client_trace_config()]) a
 
 ### Tracing with Flask
 
-To set `trace_id` and `span_id` in `LogContext` for incoming requests
-based on the value of the `Trace-Id` and `Span-Id` headers, use the
+To set `trace_id`, `user_id` and `span_id` in `LogContext` for incoming requests
+based on the value of the `Trace-Id`, `User-Id` and `Span-Id` headers, use the
 `TracingMiddleware` like so:
 
 ```python

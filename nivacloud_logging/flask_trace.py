@@ -19,6 +19,7 @@ class TracingMiddleware:
 
     def __call__(self, environ, start_response):
         trace_id = environ.get('HTTP_TRACE_ID')
+        user_id = environ.get('HTTP_USER_ID')
         span_id = environ.get('HTTP_SPAN_ID') or generate_trace_id()
 
         def execute_traced_request():
@@ -37,7 +38,7 @@ class TracingMiddleware:
             return r
 
         if trace_id:
-            with LogContext(trace_id=trace_id, span_id=span_id):
+            with LogContext(trace_id=trace_id, user_id=user_id, span_id=span_id):
                 return execute_traced_request()
         else:
             with LogContext(span_id=span_id):

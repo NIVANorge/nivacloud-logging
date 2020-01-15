@@ -12,6 +12,9 @@ def create_client_trace_config():
         params.headers['Span-Id'] = LogContext.getcontext("span_id") or generate_trace_id()
         if LogContext.getcontext("trace_id"):
             params.headers['Trace-Id'] = LogContext.getcontext("trace_id")
+        if LogContext.getcontext("user_id"):
+            params.headers['User-Id'] = LogContext.getcontext("user_id")
+
 
     trace_config = aiohttp.TraceConfig()
     trace_config.on_request_start.append(on_request_start)

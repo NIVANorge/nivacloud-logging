@@ -22,4 +22,8 @@ class TracingAdapter(HTTPAdapter):
         incoming_trace_id = LogContext.getcontext("trace_id")
         if incoming_trace_id:
             request.headers['Trace-Id'] = incoming_trace_id
+
+        incoming_user_id = LogContext.getcontext("user_id")
+        if incoming_user_id:
+            request.headers["User-Id"] = incoming_user_id
         request.headers['Span-Id'] = LogContext.getcontext("span_id") or generate_trace_id()
