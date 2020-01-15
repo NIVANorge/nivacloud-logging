@@ -12,13 +12,14 @@ def log_request(request: Request):
 
 class StarletteTracingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        trace_id = request.headers.get('trace-id')
-        span_id = request.headers.get('span-id') or generate_trace_id()
-        if trace_id:
-            async with LogContext(trace_id=trace_id, span_id=span_id):
-                log_request(request)
-                return await call_next(request)
-        else:
-            async with LogContext(span_id=span_id):
-                log_request(request)
-                return await call_next(request)
+        contextvars = {
+            "trace_id": request.headers.get('trace-id'),
+            "user_id": request.headers.get('user-id'),
+            "span_id": request.headers.get('span-id') or generate_trace_id(),
+        }
+
+        contextvars_with_values = {k: v for k, v in contextvars.items() if v is not None}
+
+        async with LogContext(**contextvars_with_values):
+            log_request(request)
+            return await call_next(request)

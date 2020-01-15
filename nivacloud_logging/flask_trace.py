@@ -18,8 +18,6 @@ class TracingMiddleware:
         self.app = app
 
     def __call__(self, environ, start_response):
-        trace_id = environ.get('HTTP_TRACE_ID')
-        span_id = environ.get('HTTP_SPAN_ID') or generate_trace_id()
 
         def execute_traced_request():
             t0 = time.monotonic()
@@ -36,9 +34,14 @@ class TracingMiddleware:
                 })
             return r
 
-        if trace_id:
-            with LogContext(trace_id=trace_id, span_id=span_id):
-                return execute_traced_request()
-        else:
-            with LogContext(span_id=span_id):
-                return execute_traced_request()
+
+        contextvars = {
+            "trace_id": environ.get('HTTP_TRACE_ID'),
+            "user_id": environ.get('HTTP_USER_ID'),
+            "span_id": environ.get('HTTP_SPAN_ID') or generate_trace_id(),
+        }
+
+        contextvars_with_values = {k: v for k, v in contextvars.items() if v is not None}
+
+        with LogContext(**contextvars_with_values):
+            return execute_traced_request()

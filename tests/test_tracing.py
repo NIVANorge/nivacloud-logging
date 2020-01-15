@@ -47,8 +47,17 @@ def test_requests_trace_id_is_picked_up_from_context():
         assert headers.get('Trace-Id') == 'abc123'
 
 
+def test_requests_trace_id_is_picked_up_from_context():
+    setup_logging()
+    session = _create_tracing_requests_session()
+    with LogContext(user_id='10'):
+        result = session.get('http://httpbin.org/headers')
+        headers = result.json()['headers']
+        assert headers.get('User-Id') == '10'
+
+
 # Flask
-def test_flask_trace_id_is_injected(capsys):
+def test_flask_trace_id_and_userid_is_injected(capsys):
     app = Flask(__name__)
     app.wsgi_app = TracingMiddleware(app.wsgi_app)
 
@@ -58,21 +67,24 @@ def test_flask_trace_id_is_injected(capsys):
     def hello():
         return jsonify({
             "Trace-Id": LogContext.getcontext("trace_id"),
+            "User-Id": LogContext.getcontext("user_id"),
             "Span-Id": LogContext.getcontext("span_id"),
         })
 
     client = app.test_client()
-    r = client.get("/", headers={'Trace-Id': '123abc', 'Span-Id': '456xyz'}).json
+    r = client.get("/", headers={'Trace-Id': '123abc', 'Span-Id': '456xyz', 'User-Id': '6'}).json
     assert r.get('Trace-Id') == "123abc"
     assert r.get('Span-Id') == '456xyz'
+    assert r.get('User-Id') == '6'
 
     (out, _) = capsys.readouterr()
     parsed_output = json.loads(out)
     assert parsed_output['trace_id'] == '123abc'
     assert parsed_output['span_id'] == '456xyz'
+    assert parsed_output['user_id'] == '6'
 
 
-def test_starlette_trace_id_is_injected(capsys):
+def test_starlette_trace_id_and_user_id_is_injected(capsys):
     app = Starlette(debug=True)
     app.add_middleware(StarletteTracingMiddleware)
 
@@ -80,15 +92,17 @@ def test_starlette_trace_id_is_injected(capsys):
 
     @app.route("/")
     async def hello(request):
-        return JSONResponse({"Trace-Id": LogContext.getcontext("trace_id")})
+        return JSONResponse({"Trace-Id": LogContext.getcontext("trace_id"), "User-Id": LogContext.getcontext("user_id")})
 
     client = TestClient(app)
-    response = client.request(method="GET", url="/", headers={'Trace-Id': '123starlette'}).json()
+    response = client.request(method="GET", url="/", headers={'Trace-Id': '123starlette', 'User-Id': '3'}).json()
     assert response["Trace-Id"] == "123starlette"
+    assert response["User-Id"] == "3"
 
     (out, _) = capsys.readouterr()
     parsed_output = json.loads(out)
     assert parsed_output['trace_id'] == '123starlette'
+    assert parsed_output['user_id'] == '3'
 
 
 def test_starlette_span_id_is_picked_up_if_present(capsys):
@@ -142,10 +156,11 @@ async def test_aiohttp_generate_span_id_if_missing():
 
 
 @pytest.mark.asyncio
-async def test_aiohttp_trace_id_is_picked_up_from_context():
+async def test_aiohttp_trace_id_and_user_id_is_picked_up_from_context():
     setup_logging()
     async with aiohttp.ClientSession(trace_configs=[create_client_trace_config()]) as session, \
-            LogContext(trace_id='abc123'), \
+            LogContext(trace_id='abc123', user_id="5"), \
             session.get('http://httpbin.org/headers') as response:
         r = await response.json()
         assert r['headers'].get('Trace-Id') == 'abc123'
+        assert r['headers'].get('User-Id') == '5'
