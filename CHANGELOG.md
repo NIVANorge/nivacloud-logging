@@ -6,6 +6,11 @@ The format is based on [Keep a
 Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.15] - 2020-03-15
+
+- added logging of user agent header to request StarletteTracingMiddleware
+- reformatted all code using black formatter
+
 ## [0.8.14] - 2020-01-15
 
 - removed usage of walrus operator in order to be python 3.6 compatible
