@@ -154,7 +154,9 @@ def auto_context(*context_args: str):
         def auto_ctx_wrapper(*args, **kwargs):
             bound_args = signature.bind(*args, **kwargs)
             bound_args.apply_defaults()
-            log_params = {k: v for (k, v) in bound_args.arguments.items() if k in included_args}
+            log_params = {
+                k: v for (k, v) in bound_args.arguments.items() if k in included_args
+            }
 
             with LogContext(**log_params):
                 return func(*args, **kwargs)
@@ -178,7 +180,10 @@ def _global_exception_handler(exc_type, value, traceback):
 
     Taken from https://stackoverflow.com/questions/6234405/logging-uncaught-exceptions-in-python
     """
-    logging.exception(f"Uncaught exception {exc_type.__name__}: {value}", exc_info=(exc_type, value, traceback))
+    logging.exception(
+        f"Uncaught exception {exc_type.__name__}: {value}",
+        exc_info=(exc_type, value, traceback),
+    )
 
 
 def _loglevel_signal_handler(loggers):
@@ -194,8 +199,7 @@ def _loglevel_signal_handler(loggers):
 
     previous_handlers = {
         signalnum: handler
-        for (signalnum, handler)
-        in zip(usr_signals, map(signal.getsignal, usr_signals))
+        for (signalnum, handler) in zip(usr_signals, map(signal.getsignal, usr_signals))
         if handler != signal.SIG_DFL
     }
 
@@ -216,7 +220,7 @@ def json_default(o):
     if isinstance(o, (date, datetime, time)):
         return o.isoformat()
     elif isinstance(o, complex):
-        return {'real': o.real, 'imag': o.imag}
+        return {"real": o.real, "imag": o.imag}
     else:
         return str(o)
 
@@ -238,16 +242,41 @@ class _PlaintextLogContextHandler(_LogContextHandler):
     # From Python docs via jsonlogger.py:
     # http://docs.python.org/library/logging.html#logrecord-attributes
     RESERVED_ATTRS = {
-        'args', 'asctime', 'created', 'exc_info', 'exc_text', 'filename',
-        'funcName', 'levelname', 'levelno', 'lineno', 'module',
-        'msecs', 'message', 'msg', 'name', 'pathname', 'process',
-        'processName', 'relativeCreated', 'stack_info', 'thread', 'threadName'}
+        "args",
+        "asctime",
+        "created",
+        "exc_info",
+        "exc_text",
+        "filename",
+        "funcName",
+        "levelname",
+        "levelno",
+        "lineno",
+        "module",
+        "msecs",
+        "message",
+        "msg",
+        "name",
+        "pathname",
+        "process",
+        "processName",
+        "relativeCreated",
+        "stack_info",
+        "thread",
+        "threadName",
+    }
 
     def handle(self, record):
-        ctx = {k: v for (k, v) in LogContext.getcontext().items() if not hasattr(record, k)}
+        ctx = {
+            k: v for (k, v) in LogContext.getcontext().items() if not hasattr(record, k)
+        }
 
         for key, value in record.__dict__.items():
-            if key not in self.RESERVED_ATTRS and not key.startswith("_") and key != 'context':
+            if (
+                key not in self.RESERVED_ATTRS
+                and not key.startswith("_")
+                and key != "context"
+            ):
                 ctx[key] = value
 
         formatted_ctx = [f"{k}={self.plain_repr(v)}" for (k, v) in ctx.items()]
@@ -287,9 +316,11 @@ def _setup_structured_logging(min_level, stream):
 
 
 def _setup_plaintext_logging(min_level, stream):
-    formatter = Formatter(fmt="%(asctime)s %(levelname)-7s "
-                              "%(filename)s:%(lineno)s:%(funcName)s, "
-                              "process=%(process)d, thread=%(thread)d: %(message)s%(context)s")
+    formatter = Formatter(
+        fmt="%(asctime)s %(levelname)-7s "
+        "%(filename)s:%(lineno)s:%(funcName)s, "
+        "process=%(process)d, thread=%(thread)d: %(message)s%(context)s"
+    )
 
     stream_handler = _PlaintextLogContextHandler(stream)
     stream_handler.setLevel(min_level)
@@ -306,7 +337,7 @@ def _setup_plaintext_logging(min_level, stream):
 def _override_log_handlers():
     loggers = logging.root.manager.loggerDict.values()
     for logger in [logging.root, *loggers]:
-        if hasattr(logger, 'handlers'):
+        if hasattr(logger, "handlers"):
             for handler in logger.handlers[:]:
                 if not isinstance(handler, _LogContextHandler):
                     logger.removeHandler(handler)
@@ -335,15 +366,24 @@ def setup_logging(min_level=logging.INFO, plaintext=None, stream=None, override=
     """
 
     if plaintext is None:
-        plaintext = os.getenv('NIVACLOUD_PLAINTEXT_LOGS', '').lower() not in ('', '0', 'false', 'f')
+        plaintext = os.getenv("NIVACLOUD_PLAINTEXT_LOGS", "").lower() not in (
+            "",
+            "0",
+            "false",
+            "f",
+        )
 
     if override is None:
-        override = os.getenv('NIVACLOUD_OVERRIDE_LOGGERS', '1').lower() in ('1', 'true', 't')
+        override = os.getenv("NIVACLOUD_OVERRIDE_LOGGERS", "1").lower() in (
+            "1",
+            "true",
+            "t",
+        )
 
     LogContext.reset_defaults()
-    commit_id = os.getenv('GIT_COMMIT_ID')
-    if commit_id and commit_id != 'unknown':
-        LogContext.set_default('git_commit_id', commit_id)
+    commit_id = os.getenv("GIT_COMMIT_ID")
+    if commit_id and commit_id != "unknown":
+        LogContext.set_default("git_commit_id", commit_id)
 
     # This is a work-around to be able to run tests with pytest's output
     # capture when threading. (It doesn't work when you set it as a
