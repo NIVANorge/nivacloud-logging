@@ -7,19 +7,28 @@ from starlette.responses import Response
 
 
 def log_request(request: Request):
-    logging.info(f"{request.method} {request.url.path} ",
-                 extra={"query_params": request.url.query, "user_agent": request.headers.get("user-agent")})
+    logging.info(
+        f"{request.method} {request.url.path} ",
+        extra={
+            "query_params": request.url.query,
+            "user_agent": request.headers.get("user-agent"),
+        },
+    )
 
 
 class StarletteTracingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         contextvars = {
-            "trace_id": request.headers.get('trace-id'),
-            "user_id": request.headers.get('user-id'),
-            "span_id": request.headers.get('span-id') or generate_trace_id(),
+            "trace_id": request.headers.get("trace-id"),
+            "user_id": request.headers.get("user-id"),
+            "span_id": request.headers.get("span-id") or generate_trace_id(),
         }
 
-        contextvars_with_values = {k: v for k, v in contextvars.items() if v is not None}
+        contextvars_with_values = {
+            k: v for k, v in contextvars.items() if v is not None
+        }
 
         async with LogContext(**contextvars_with_values):
             log_request(request)
