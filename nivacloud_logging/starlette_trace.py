@@ -7,7 +7,8 @@ from starlette.responses import Response
 
 
 def log_request(request: Request):
-    logging.info(f"{request.method} {request.url.path} ", extra={"query_params": request.url.query})
+    logging.info(f"{request.method} {request.url.path} ",
+                 extra={"query_params": request.url.query, "user_agent": request.headers.get("user-agent")})
 
 
 class StarletteTracingMiddleware(BaseHTTPMiddleware):
