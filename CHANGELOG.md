@@ -6,6 +6,14 @@ The format is based on [Keep a
 Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.16] - 2020-03-17
+
+- StarletteTracingMiddleware: Also logging exceptions including log context
+
+Using unicorn this may lead to double logging, but at least exceptions are logged using log context. 
+
+May consider adding an option to opt out of this behaviour. 
+
 ## [0.8.15] - 2020-03-15
 
 - added logging of user agent header to request StarletteTracingMiddleware
