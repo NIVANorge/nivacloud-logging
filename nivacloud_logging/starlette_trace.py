@@ -1,6 +1,6 @@
 import logging
 
-from nivacloud_logging.log_utils import generate_trace_id, LogContext
+from nivacloud_logging.log_utils import generate_trace_id, LogContext, log_exceptions
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
@@ -30,6 +30,6 @@ class StarletteTracingMiddleware(BaseHTTPMiddleware):
             k: v for k, v in contextvars.items() if v is not None
         }
 
-        async with LogContext(**contextvars_with_values):
+        with LogContext(**contextvars_with_values), log_exceptions():
             log_request(request)
             return await call_next(request)
