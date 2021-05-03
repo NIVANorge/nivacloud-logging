@@ -22,7 +22,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version="0.8.16",
+    version="1.0.0",
 
     description="Utils for setting up logging used in nivacloud applications",
     long_description_content_type='text/markdown',
