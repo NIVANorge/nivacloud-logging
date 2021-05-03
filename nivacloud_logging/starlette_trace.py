@@ -21,7 +21,7 @@ class StarletteTracingMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         contextvars = {
-            "trace_id": request.headers.get("trace-id"),
+            "trace_id": request.headers.get("trace-id") or generate_trace_id(),
             "user_id": request.headers.get("user-id"),
             "span_id": request.headers.get("span-id") or generate_trace_id(),
         }

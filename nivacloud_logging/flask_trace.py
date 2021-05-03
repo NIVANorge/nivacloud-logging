@@ -35,7 +35,7 @@ class TracingMiddleware:
             return r
 
         contextvars = {
-            "trace_id": environ.get("HTTP_TRACE_ID"),
+            "trace_id": environ.get("HTTP_TRACE_ID") or generate_trace_id(),
             "user_id": environ.get("HTTP_USER_ID"),
             "span_id": environ.get("HTTP_SPAN_ID") or generate_trace_id(),
         }

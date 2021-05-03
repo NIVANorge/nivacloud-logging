@@ -83,6 +83,16 @@ def test_flask_trace_id_and_userid_is_injected(capsys):
     assert parsed_output['span_id'] == '456xyz'
     assert parsed_output['user_id'] == '6'
 
+    # request with no trace/span/user headers set
+    response2 = client.get("/").json
+    assert response2["Trace-Id"] is not None
+    assert response2["User-Id"] is None
+
+    # check that a trace-id was generated and logged
+    (out, _) = capsys.readouterr()
+    parsed_output2 = json.loads(out)
+    assert parsed_output2['trace_id'] == response2["Trace-Id"]
+
 
 def test_starlette_trace_id_and_user_id_is_injected(capsys):
     app = Starlette(debug=True)
@@ -103,6 +113,16 @@ def test_starlette_trace_id_and_user_id_is_injected(capsys):
     parsed_output = json.loads(out)
     assert parsed_output['trace_id'] == '123starlette'
     assert parsed_output['user_id'] == '3'
+
+    # request with no trace/span/user headers set
+    response2 = client.request(method="GET", url="/").json()
+    assert response2["Trace-Id"] is not None
+    assert response2["User-Id"] is None
+
+    # check that a trace-id was generated and logged
+    (out, _) = capsys.readouterr()
+    parsed_output2 = json.loads(out)
+    assert parsed_output2['trace_id'] == response2["Trace-Id"]
 
 
 def test_starlette_span_id_is_picked_up_if_present(capsys):
