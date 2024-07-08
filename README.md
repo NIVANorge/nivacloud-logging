@@ -5,9 +5,9 @@ consistent way across [NIVA](https://www.niva.no/)'s Python-based
 cloud services.
 
 We're currently stuffing both regular application and system logs and
-traces into [StackDriver](https://cloud.google.com/stackdriver/) in
-Google Cloud, so this is for making (reasonably) sure that everything
-logs in a JSON format that StackDriver understands.
+traces into [Console Logs](https://console.cloud.google.com/logs/) in
+Google Cloud, so this is for making sure that we're adding information
+that makes it easy to trace our development.
 
 ## Usage
 
@@ -160,8 +160,8 @@ This repository is primarily intended for internal use within
 
 Applications that run in *nivacloud* run on Google Kubernetes
 Engine. All logs from applications are aggregated via stdout to
-[Stackdriver](https://cloud.google.com/stackdriver/) running in Google
-Cloud.
+[Logs](https://console.cloud.google.com/logs/) running in Google
+Cloud. Formerly known as StackDriver.
 
 When logs are aggregated from multiple sources via stdout, multi-line
 logs end up as multiple log entries. One approach to this problem is to
