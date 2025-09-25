@@ -50,6 +50,8 @@ If you want to tweak the log level of a running service, you can
 send `SIGUSR1` to set `INFO` level debugging and `SIGUSR2` to set
 `DEBUG` level debugging.
 
+NB! If running locally on Windows, this feature will not be available.
+
 ### Running with Gunicorn
 
 If you want access logs, pass `--access-logfile -` to Gunicorn. If

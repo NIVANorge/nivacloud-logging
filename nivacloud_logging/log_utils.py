@@ -191,7 +191,10 @@ def _loglevel_signal_handler(loggers):
     Handle SIGUSR1 and SIGUSR2. Sets log level to INFO on SIGUSR1 and DEBUG on SIGUSR2.
 
     After setting level, it calls the previous SIGUSRx handler unless it was set to SIG_DFL.
-    """
+    
+    Note: SIGUSR1 and SIGUSR2 are not available on Windows, so this function will
+    do nothing on Windows systems.
+    """  
     usr_signals = {
         signal.SIGUSR1: logging.INFO,
         signal.SIGUSR2: logging.DEBUG,
@@ -402,4 +405,7 @@ def setup_logging(min_level=logging.INFO, plaintext=None, stream=None, override=
     if override:
         _override_log_handlers()
 
-    _loglevel_signal_handler(loggers)
+    try:
+        _loglevel_signal_handler(loggers)
+    except AttributeError:
+        pass  # Probably running on Windows where SIGUSR1/2 are not available
