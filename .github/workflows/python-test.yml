@@ -23,7 +23,7 @@ jobs:
         pip install pytest pytest-asyncio
         pip install -e .
         # Install all optional dependencies for testing
-        pip install requests Flask aiohttp starlette gunicorn
+        pip install requests Flask aiohttp httpx starlette gunicorn
 
     - name: Run tests
       run: |
