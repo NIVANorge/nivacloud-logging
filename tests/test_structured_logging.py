@@ -336,6 +336,7 @@ def test_should_handle_complex_context_data(capsys):
     assert math.isnan(thing['nan'])
 
 
+@pytest.mark.skipif(not hasattr(signal, "SIGUSR1"), reason="SIGUSR1 is not available on Windows")
 def test_sigusr1_should_set_info_logging(capsys):
     setup_logging(min_level=logging.ERROR)
     logging.info("Not logged")
@@ -348,6 +349,7 @@ def test_sigusr1_should_set_info_logging(capsys):
     assert outputs[0]['message'] == 'This is logged'
 
 
+@pytest.mark.skipif(not hasattr(signal, "SIGUSR2"), reason="SIGUSR2 is not available on Windows")
 def test_sigusr2_should_set_debug_logging(capsys):
     setup_logging(min_level=logging.INFO)
     logging.debug("Not logged")
@@ -360,6 +362,7 @@ def test_sigusr2_should_set_debug_logging(capsys):
     assert outputs[0]['message'] == 'THIS is logged'
 
 
+@pytest.mark.skipif(not hasattr(signal, "SIGUSR2"), reason="SIGUSR2 is not available on Windows")
 def test_signal_handler_override_should_call_previous_handlers(capsys):
     myhandler_run_count = 0
 

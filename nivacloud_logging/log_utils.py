@@ -265,6 +265,7 @@ class _PlaintextLogContextHandler(_LogContextHandler):
         "processName",
         "relativeCreated",
         "stack_info",
+        "taskName",
         "thread",
         "threadName",
     }
