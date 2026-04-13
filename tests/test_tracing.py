@@ -7,6 +7,7 @@ import requests
 from flask import Flask, jsonify
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse
+from starlette.routing import Route
 from starlette.testclient import TestClient
 
 from nivacloud_logging.aiohttp_trace import create_client_trace_config
@@ -94,15 +95,21 @@ def test_flask_trace_id_and_userid_is_injected(capsys):
     assert parsed_output2['trace_id'] == response2["Trace-Id"]
 
 
+def _parse_starlette_trace_log(out):
+    """Return the log record emitted by StarletteTracingMiddleware, ignoring
+    other log lines (e.g. httpx's "HTTP Request: ..." INFO log from TestClient)."""
+    records = [json.loads(line) for line in out.splitlines() if line]
+    return next(r for r in records if r.get("module") == "starlette_trace")
+
+
 def test_starlette_trace_id_and_user_id_is_injected(capsys):
-    app = Starlette(debug=True)
+    async def hello(request):
+        return JSONResponse({"Trace-Id": LogContext.getcontext("trace_id"), "User-Id": LogContext.getcontext("user_id")})
+
+    app = Starlette(debug=True, routes=[Route("/", hello)])
     app.add_middleware(StarletteTracingMiddleware)
 
     setup_logging()
-
-    @app.route("/")
-    async def hello(request):
-        return JSONResponse({"Trace-Id": LogContext.getcontext("trace_id"), "User-Id": LogContext.getcontext("user_id")})
 
     client = TestClient(app)
     response = client.request(method="GET", url="/", headers={'Trace-Id': '123starlette', 'User-Id': '3'}).json()
@@ -110,7 +117,7 @@ def test_starlette_trace_id_and_user_id_is_injected(capsys):
     assert response["User-Id"] == "3"
 
     (out, _) = capsys.readouterr()
-    parsed_output = json.loads(out)
+    parsed_output = _parse_starlette_trace_log(out)
     assert parsed_output['trace_id'] == '123starlette'
     assert parsed_output['user_id'] == '3'
 
@@ -121,19 +128,18 @@ def test_starlette_trace_id_and_user_id_is_injected(capsys):
 
     # check that a trace-id was generated and logged
     (out, _) = capsys.readouterr()
-    parsed_output2 = json.loads(out)
+    parsed_output2 = _parse_starlette_trace_log(out)
     assert parsed_output2['trace_id'] == response2["Trace-Id"]
 
 
 def test_starlette_span_id_is_picked_up_if_present(capsys):
-    app = Starlette(debug=True)
+    async def hello(request):
+        return JSONResponse({"Span-Id": LogContext.getcontext("span_id")})
+
+    app = Starlette(debug=True, routes=[Route("/", hello)])
     app.add_middleware(StarletteTracingMiddleware)
 
     setup_logging()
-
-    @app.route("/")
-    async def hello(request):
-        return JSONResponse({"Span-Id": LogContext.getcontext("span_id")})
 
     client = TestClient(app)
     response = client.request(method="GET", url="/", headers={'Span-Id': 'starlettespanid'}).json()
@@ -141,19 +147,18 @@ def test_starlette_span_id_is_picked_up_if_present(capsys):
     assert span_id == "starlettespanid"
 
     (out, _) = capsys.readouterr()
-    parsed_output = json.loads(out)
+    parsed_output = _parse_starlette_trace_log(out)
     assert parsed_output['span_id'] == "starlettespanid"
 
 
 def test_starlette_span_id_is_generated_if_not_present(capsys):
-    app = Starlette(debug=True)
+    async def hello(request):
+        return JSONResponse({"Span-Id": LogContext.getcontext("span_id")})
+
+    app = Starlette(debug=True, routes=[Route("/", hello)])
     app.add_middleware(StarletteTracingMiddleware)
 
     setup_logging()
-
-    @app.route("/")
-    async def hello(request):
-        return JSONResponse({"Span-Id": LogContext.getcontext("span_id")})
 
     client = TestClient(app)
     response = client.request(method="GET", url="/").json()
@@ -161,7 +166,7 @@ def test_starlette_span_id_is_generated_if_not_present(capsys):
     assert span_id is not None
 
     (out, _) = capsys.readouterr()
-    parsed_output = json.loads(out)
+    parsed_output = _parse_starlette_trace_log(out)
     assert parsed_output['span_id'] == span_id
 
 

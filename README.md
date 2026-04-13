@@ -151,6 +151,26 @@ use *caplog* to check log messages, but we're testing the logging
 itself here, so it makes more sense to use *capsys* to read the
 actual text output.
 
+## Auditing dependencies
+
+[pip-audit](https://pypi.org/project/pip-audit/) is included as a
+dev dependency. It scans the installed environment for packages with
+known vulnerabilities, using the [Python Packaging Advisory
+Database](https://github.com/pypa/advisory-database) (OSV).
+
+```
+$ poetry install --with dev
+$ poetry run pip-audit --skip-editable
+```
+
+The `--skip-editable` flag excludes the editable install of
+*nivacloud-logging* itself from the audit. If vulnerabilities are
+reported in locked dependencies, update them with e.g.:
+
+```
+$ poetry update urllib3
+```
+
 ## Intended audience
 
 This repository is primarily intended for internal use within
