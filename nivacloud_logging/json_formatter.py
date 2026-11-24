@@ -1,7 +1,7 @@
-from pythonjsonlogger import jsonlogger
+from pythonjsonlogger.json import JsonFormatter
 
 
-class StackdriverJsonFormatter(jsonlogger.JsonFormatter, object):
+class StackdriverJsonFormatter(JsonFormatter, object):
     """
     Creates a json formatter which outputs logs in a "stackdriver friendly format".
     Following the appraoch described at
@@ -18,7 +18,7 @@ class StackdriverJsonFormatter(jsonlogger.JsonFormatter, object):
         *args,
         **kwargs
     ):
-        jsonlogger.JsonFormatter.__init__(self, fmt=fmt, *args, **kwargs)
+        JsonFormatter.__init__(self, fmt=fmt, *args, **kwargs)
 
     def process_log_record(self, log_record):
         log_record["severity"] = log_record["levelname"]
